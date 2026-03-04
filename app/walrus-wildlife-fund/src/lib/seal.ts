@@ -180,7 +180,6 @@ export async function buildDecryptionTx(
         arguments: [
             tx.pure.vector("u8", idBytes),
             tx.object(serviceObjectId),
-            tx.object("0x6"), // Clock
         ],
     });
 
