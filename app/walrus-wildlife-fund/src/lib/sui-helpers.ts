@@ -5,7 +5,7 @@ import type { Dataset } from "./types";
 type AnySuiClient = any;
 
 export function extractFields(obj: any): any | null {
-  return obj?.data?.content?.fields ?? obj?.object?.json ?? null;
+  return  obj?.object?.json ?? null;
 }
 
 function refToId(value: any): string | null {
@@ -75,21 +75,14 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
 /**
  * Fetch a Sui object using whichever client API shape is available.
  */
-export async function getObjectAny(
+export async function getObjectBySdk(
   suiClient: AnySuiClient,
   id: string,
 ): Promise<any> {
-  try {
-    return await suiClient.getObject({
-      id,
-      options: { showContent: true, showOwner: true, showType: true },
-    });
-  } catch {
-    return suiClient.getObject({
-      objectId: id,
-      include: { json: true, owner: true },
-    });
-  }
+  return suiClient.getObject({
+    objectId: id,
+    include: { json: true, owner: true },
+  });
 }
 
 /**

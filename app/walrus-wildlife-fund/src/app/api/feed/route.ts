@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { categories as fallbackCategories } from "@/lib/mock-data";
 import type { Dataset } from "@/lib/types";
-import { extractFields, toUiDataset, getObjectAny } from "@/lib/sui-helpers";
+import { extractFields, toUiDataset, getObjectBySdk } from "@/lib/sui-helpers";
 import { suiClient } from "../client";
 import { deriveObjectID } from "@mysten/sui/utils";
 import { bcs } from "@mysten/sui/bcs";
@@ -12,7 +12,7 @@ const getFeed = async (): Promise<{ datasets: Dataset[]; categories: string[] }>
     return { datasets: [], categories: fallbackCategories };
   }
 
-  const platformObject = await getObjectAny(suiClient, platformObjectId);
+  const platformObject = await getObjectBySdk(suiClient, platformObjectId);
   const platformFields = extractFields(platformObject);
   const totalObjectsCount = Number(platformFields?.dataset_counter ?? 0);
 
@@ -32,7 +32,7 @@ const getFeed = async (): Promise<{ datasets: Dataset[]; categories: string[] }>
   const objects = await Promise.all(
     lastObjects.map(async (id) => {
       try {
-        return await getObjectAny(suiClient, id);
+        return await getObjectBySdk(suiClient, id);
       } catch {
         return null;
       }

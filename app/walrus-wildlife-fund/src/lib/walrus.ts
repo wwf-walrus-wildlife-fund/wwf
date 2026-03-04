@@ -53,10 +53,11 @@ export interface WalrusBlobQueryResult {
  */
 export async function uploadToWalrus(
     data: Uint8Array,
+    userAddress: string,
     epochs: number = WALRUS_EPOCHS
 ): Promise<WalrusUploadResponse> {
     const safeEpochs = normalizeWalrusEpochs(epochs);
-    const url = `${WALRUS_PUBLISHER_URL}/v1/blobs?epochs=${safeEpochs}`;
+    const url = `${WALRUS_PUBLISHER_URL}/v1/blobs?epochs=${safeEpochs}&send_object_to=${userAddress}`;
     let response: Response;
     try {
         response = await fetch(url, {

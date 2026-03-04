@@ -1,6 +1,6 @@
 import { bcs } from "@mysten/sui/bcs";
 import { deriveObjectID } from "@mysten/sui/utils";
-import { extractFields, extractIdList, getObjectAny } from "@/lib/sui-helpers";
+import { extractFields, extractIdList, getObjectBySdk } from "@/lib/sui-helpers";
 import { suiClient } from "../client";
 
 async function getAccountObject(userAddress: string) {
@@ -18,7 +18,7 @@ async function getAccountObject(userAddress: string) {
   );
 
   try {
-    return await getObjectAny(suiClient, accountObjectId);
+    return await getObjectBySdk(suiClient, accountObjectId);
   } catch {
     return null;
   }
@@ -45,7 +45,7 @@ export async function getUserDatasets(
   const objects = await Promise.all(
     allIds.map(async (id) => {
       try {
-        return await getObjectAny(suiClient, id);
+        return await getObjectBySdk(suiClient, id);
       } catch {
         return null;
       }

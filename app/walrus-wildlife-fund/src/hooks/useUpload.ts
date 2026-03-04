@@ -168,7 +168,7 @@ export function useUpload(): UseUploadReturn {
                 // ── 4. Upload encrypted blob to Walrus ──
                 setProgress(makeProgress('uploading', 50, 'Uploading to Walrus…'));
                 const epochs = normalizeWalrusEpochs(params.storageDays);
-                const { blobId } = await uploadToWalrus(encryptedData, epochs);
+                const { blobId } = await uploadToWalrus(encryptedData, account.address, epochs);
                 // ── 5. Build & execute on-chain transaction ──
                 setProgress(makeProgress('publishing-tx', 80, 'Publishing on-chain…'));
 
