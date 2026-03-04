@@ -115,6 +115,8 @@ export function useUpload(): UseUploadReturn {
             setIsSuccess(false);
             setError(null);
 
+            const tx = new Transaction();
+
             try {
                 // ── 1. Read the file ──
                 setProgress(makeProgress('reading-file', 5, 'Reading file…'));
@@ -172,17 +174,16 @@ export function useUpload(): UseUploadReturn {
                     console.info('[useUpload] creating missing account object', {
                         accountObjectId,
                     });
-                    const setupTx = new Transaction();
-                    const newAccount = setupTx.moveCall({
+                    const newAccount = tx.moveCall({
                         target: `${packageId}::account::new`,
-                        arguments: [setupTx.object(platformObjectId)],
+                        arguments: [tx.object(platformObjectId)],
                     });
-                    setupTx.moveCall({
+                    tx.moveCall({
                         target: `${packageId}::account::share`,
                         arguments: [newAccount],
                     });
                     await signAndExecuteTransaction({
-                        transaction: setupTx,
+                        transaction: tx,
                     });
                 }
 
@@ -223,8 +224,6 @@ export function useUpload(): UseUploadReturn {
                 const priceMist = BigInt(
                     Math.round(parseFloat(params.price) * 1_000_000_000),
                 );
-
-                const tx = new Transaction();
 
                 const dataset = tx.moveCall({
                     target: `${packageId}::dataset::new_derived`,
