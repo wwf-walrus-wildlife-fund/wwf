@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import {
-  Upload,
-  Download,
-  TrendingUp,
-  Database,
-  Clock,
-  ExternalLink,
-  Eye,
-} from "lucide-react";
-import { motion } from "motion/react";
+import { FindUserForm } from "@/components/find-user-form";
+import { Footer } from "@/components/footer";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
-import { FindUserForm } from "@/components/find-user-form";
 import { useDashboard } from "@/hooks/useDashboard";
+import {
+  Clock,
+  Database,
+  Download,
+  ExternalLink,
+  Eye,
+  TrendingUp,
+  Upload,
+} from "lucide-react";
+import { motion } from "motion/react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useState } from "react";
 
 const statIcons: Record<string, typeof Upload> = {
   published: Upload,
@@ -35,7 +36,7 @@ const statColors: Record<string, string> = {
 export default function UserDashboardPage() {
   const params = useParams<{ address: string }>();
   const address = typeof params?.address === "string" ? params.address : "";
-
+  
   const { publishedDatasets, purchasedDatasets, stats, isLoading, error } =
     useDashboard(address);
 
@@ -329,13 +330,13 @@ export default function UserDashboardPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <button className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
+                            <Link href={`/dataset/${encodeURIComponent(d.id)}`} className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
                               {activeTab === "published" ? (
                                 <Eye className="w-4 h-4" />
                               ) : (
                                 <ExternalLink className="w-4 h-4" />
                               )}
-                            </button>
+                            </Link>
                           </td>
                         </motion.tr>
                       ))}

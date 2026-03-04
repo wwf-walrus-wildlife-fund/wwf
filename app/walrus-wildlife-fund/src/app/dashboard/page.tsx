@@ -16,6 +16,8 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FindUserForm } from "@/components/find-user-form";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useRouter } from "next/router";
+import Link from "next/link";
 
 const statIcons: Record<string, typeof Upload> = {
   published: Upload,
@@ -328,13 +330,13 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <button className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
+                            <Link href={`/dataset/${encodeURIComponent(d.id)}`} className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
                               {activeTab === "published" ? (
                                 <Eye className="w-4 h-4" />
                               ) : (
                                 <ExternalLink className="w-4 h-4" />
                               )}
-                            </button>
+                            </Link>
                           </td>
                         </motion.tr>
                       ))}

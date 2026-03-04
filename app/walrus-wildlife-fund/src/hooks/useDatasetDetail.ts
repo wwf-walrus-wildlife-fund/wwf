@@ -15,6 +15,7 @@ type DatasetDetail = {
   downloads: number;
   expiresIn: string;
   verified: boolean;
+  blob_ids: string[];
 };
 
 function extractFields(obj: any): any | null {
@@ -26,6 +27,8 @@ function toUiDataset(id: string, fields: any): DatasetDetail {
   const priceSui = Number.isFinite(priceMist)
     ? (priceMist / 1_000_000_000).toString()
     : "0";
+
+    console.log(fields)
 
   return {
     id,
@@ -41,6 +44,7 @@ function toUiDataset(id: string, fields: any): DatasetDetail {
     downloads: 0,
     expiresIn: "N/A",
     verified: false,
+    blob_ids: fields?.blob_ids?.contents ?? [],
   };
 }
 

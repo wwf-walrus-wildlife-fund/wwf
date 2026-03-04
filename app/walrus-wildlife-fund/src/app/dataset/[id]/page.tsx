@@ -15,6 +15,9 @@ import {
   Loader2,
   Lock,
   Unlock,
+  FileIcon,
+  Dog,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
@@ -212,7 +215,7 @@ export default function DatasetDetailPage({
                           className="text-[#C4B5FD]"
                           style={{ fontSize: "0.8rem" }}
                         >
-                          {dataset.seller.slice(0, 4)}
+                          <FileIcon />
                         </span>
                       </div>
                       <div>
@@ -225,24 +228,69 @@ export default function DatasetDetailPage({
                         >
                           {dataset.seller}
                         </p>
-                        <p
-                          className="text-white/20"
-                          style={{ fontSize: "0.7rem" }}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleCopy}
+                        className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
+                      >
+                        {copied ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <Link href={"https://testnet.suivision.xyz/account/" + dataset.seller} className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all">
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                  <h3
+                    className="text-white/60 mb-4"
+                    style={{ fontSize: "0.9rem" }}
+                  >
+                    Blob ID
+                  </h3>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#4834D4]/30 to-[#6C5CE7]/30 flex items-center justify-center">
+                        <span
+                          className="text-[#C4B5FD]"
+                          style={{ fontSize: "0.8rem" }}
                         >
-                          12 datasets published
+                          <Dog />
+                        </span>
+                      </div>
+                      <div>
+                        <p
+                          className="text-white/60"
+                          style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: "0.85rem",
+                          }}
+                        >
+                          {dataset.blob_ids[0]}
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={handleCopy}
-                      className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
-                    >
-                      {copied ? (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={handleCopy}
+                        className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
+                      >
+                        {copied ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <Link href={"https://walruscan.com/testnet/blob/" + dataset.blob_ids[0]} className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all">
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               </div>

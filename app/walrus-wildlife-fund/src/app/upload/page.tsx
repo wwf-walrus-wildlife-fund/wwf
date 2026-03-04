@@ -128,6 +128,10 @@ export default function UploadPage() {
               Monetize your datasets on the decentralized marketplace.
             </p>
           </motion.div>
+          
+          <div className="mb-8 text-center">
+              Storage cost for datasets is free as we are using a Publisher
+          </div>
 
           <div className="space-y-6">
             {/* Dropzone */}
