@@ -62,22 +62,17 @@ export function useBuy(): UseBuyReturn {
         () => null,
       );
       const accountExists = Boolean(accountObject?.object?.json);
+
+      const tx = new Transaction();
+      let newAccount;
+
       if (!accountExists) {
-        const setupTx = new Transaction();
-        const newAccount = setupTx.moveCall({
+        newAccount = tx.moveCall({
           target: `${packageId}::account::new`,
-          arguments: [setupTx.object(namespaceId)],
-        });
-        setupTx.moveCall({
-          target: `${packageId}::account::share`,
-          arguments: [newAccount],
-        });
-        await signAndExecuteTransaction({
-          transaction: setupTx,
+          arguments: [tx.object(namespaceId)],
         });
       }
 
-      const tx = new Transaction();
       const amount = tx.pure.u64(priceMist);
       const SUI_TYPE_ARG = tx.gas;
       const [paymentCoin] = tx.splitCoins(SUI_TYPE_ARG, [amount]);
@@ -87,9 +82,16 @@ export function useBuy(): UseBuyReturn {
         arguments: [
           tx.object(datasetId),
           paymentCoin,
-          tx.object(accountId),
+          newAccount ? newAccount : tx.object(accountId),
         ],
       });
+
+      if (!accountExists && newAccount) {
+        tx.moveCall({
+          target: `${packageId}::account::share`,
+          arguments: [newAccount],
+        });
+      }
 
       await signAndExecuteTransaction({
         transaction: tx,

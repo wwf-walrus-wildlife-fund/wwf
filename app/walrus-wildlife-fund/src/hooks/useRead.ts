@@ -43,11 +43,17 @@ export const canRead = async (
     bcs.Address.serialize(account).toBytes(),
   );
 
-  const accountObject = await suiClient.getObject({
-    objectId: accountObjectId,
-    include: { json: true },
-  });
-  const accountFields = extractFields(accountObject);
+  let accountObject;
+  try {
+    accountObject = await suiClient.getObject({
+      objectId: accountObjectId,
+      include: { json: true },
+    });
+  }
+  catch (error) {
+    return false;
+  }
+  const accountFields = accountObject.object.json;
   if (!accountFields) return false;
 
   const ownIds = extractIdList(accountFields.own_datasets);
