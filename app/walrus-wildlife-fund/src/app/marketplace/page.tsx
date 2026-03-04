@@ -12,6 +12,8 @@ import { useFeed } from "@/hooks/useFeed";
 export default function MarketplacePage() {
   const {
     datasets: filteredDatasets,
+    allDatasets,
+    isFeedEmpty,
     categories,
     search,
     setSearch,
@@ -139,7 +141,16 @@ export default function MarketplacePage() {
             ))}
           </div>
 
-          {filteredDatasets.length === 0 && (
+          {isFeedEmpty && (
+            <div className="text-center py-20">
+              <div className="text-white/10 mb-4" style={{ fontSize: "3rem" }}>
+                :(
+              </div>
+              <p className="text-white/30">The Feed is Empty</p>
+            </div>
+          )}
+
+          {!isFeedEmpty && filteredDatasets.length === 0 && allDatasets.length > 0 && (
             <div className="text-center py-20">
               <div className="text-white/10 mb-4" style={{ fontSize: "3rem" }}>
                 :/

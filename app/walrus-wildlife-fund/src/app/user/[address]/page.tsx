@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import {
   Upload,
   Download,
@@ -31,9 +32,13 @@ const statColors: Record<string, string> = {
   storage: "text-[#C4B5FD]",
 };
 
-export default function DashboardPage() {
+export default function UserDashboardPage() {
+  const params = useParams<{ address: string }>();
+  const address = typeof params?.address === "string" ? params.address : "";
+
   const { publishedDatasets, purchasedDatasets, stats, isLoading, error } =
-    useDashboard();
+    useDashboard(address);
+
   const [activeTab, setActiveTab] = useState<"published" | "purchased">(
     "published",
   );
@@ -56,14 +61,13 @@ export default function DashboardPage() {
             <h1 className="text-white mb-2" style={{ fontSize: "2rem" }}>
               Dashboard
             </h1>
-            <p className="text-white/30">
-              Manage your datasets and track performance.
+            <p className="text-white/30 break-all">
+              Showing datasets for: {address || "Unknown address"}
             </p>
           </motion.div>
 
-          <FindUserForm />
+          <FindUserForm initialAddress={address} />
 
-          {/* Stats */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -100,7 +104,6 @@ export default function DashboardPage() {
             })}
           </motion.div>
 
-          {/* Earnings graph placeholder */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -142,7 +145,6 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,7 +175,6 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            {/* Table */}
             <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
@@ -240,7 +241,7 @@ export default function DashboardPage() {
                           className="px-6 py-8 text-center text-white/40"
                           style={{ fontSize: "0.9rem" }}
                         >
-                          Loading your datasets...
+                          Loading datasets...
                         </td>
                       </tr>
                     )}
@@ -265,8 +266,8 @@ export default function DashboardPage() {
                           style={{ fontSize: "0.9rem" }}
                         >
                           {activeTab === "published"
-                            ? "You don't own any dataset yet."
-                            : "You haven't purchased any dataset yet."}
+                            ? "This user doesn't own any dataset yet."
+                            : "This user hasn't purchased any dataset yet."}
                         </td>
                       </tr>
                     )}

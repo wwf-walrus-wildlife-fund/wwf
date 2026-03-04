@@ -5,6 +5,7 @@ export function useFeed() {
   const [allDatasets, setAllDatasets] = useState<Dataset[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("popular");
@@ -13,11 +14,36 @@ export function useFeed() {
     async function fetchFeed() {
       try {
         const res = await fetch("/api/feed");
-        const data = await res.json();
-        setAllDatasets(data.datasets);
-        setCategories(data.categories);
+        if (!res.ok) {
+          throw new Error(`Feed request failed (${res.status})`);
+        }
+
+        const text = await res.text();
+        const data = text ? JSON.parse(text) : null;
+        const datasets = (data?.datasets ?? data?.feed ?? []) as Dataset[];
+
+        setAllDatasets(Array.isArray(datasets) ? datasets : []);
+
+        const apiCategories = Array.isArray(data?.categories)
+          ? (data.categories as string[])
+          : [];
+        const derived = Array.from(
+          new Set(
+            (Array.isArray(datasets) ? datasets : [])
+              .map((d) => d?.category)
+              .filter((c): c is string => typeof c === "string" && c.length > 0),
+          ),
+        );
+        const nextCategories = Array.from(
+          new Set(["All", ...apiCategories, ...derived]),
+        );
+        setCategories(nextCategories);
+        setError(null);
       } catch (err) {
         console.error("Failed to fetch feed:", err);
+        setAllDatasets([]);
+        setCategories(["All"]);
+        setError(err instanceof Error ? err.message : "Failed to fetch feed");
       } finally {
         setIsLoading(false);
       }
@@ -39,6 +65,7 @@ export function useFeed() {
   return {
     datasets: filteredDatasets,
     allDatasets,
+    isFeedEmpty: !isLoading && allDatasets.length === 0,
     categories,
     search,
     setSearch,
@@ -47,6 +74,7 @@ export function useFeed() {
     sortBy,
     setSortBy,
     isLoading,
+    error,
   };
 }
 
