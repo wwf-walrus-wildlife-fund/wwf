@@ -168,9 +168,6 @@ export function useUpload(): UseUploadReturn {
                         target: `${packageId}::account::share`,
                         arguments: [newAccount],
                     });
-                    await signAndExecuteTransaction({
-                        transaction: tx,
-                    });
                 }
 
                 // ── 3. Seal-encrypt full dataset bytes ──
