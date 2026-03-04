@@ -156,11 +156,13 @@ export function useUpload(): UseUploadReturn {
                     accountObjectId,
                     exists: accountExists,
                 });
+                let newAccount;
+
                 if (!accountExists) {
                     console.info('[useUpload] creating missing account object', {
                         accountObjectId,
                     });
-                    const newAccount = tx.moveCall({
+                    newAccount = tx.moveCall({
                         target: `${packageId}::account::new`,
                         arguments: [tx.object(platformObjectId)],
                     });
@@ -209,7 +211,7 @@ export function useUpload(): UseUploadReturn {
                     target: `${packageId}::dataset::new_derived`,
                     arguments: [
                         tx.object(platformObjectId),
-                        tx.object(accountObjectId),
+                        newAccount ? newAccount : tx.object(accountObjectId),
                         tx.pure.string(params.name),
                         tx.pure.string(params.description),
                         tx.pure.string(params.imageUrl ?? ''),
