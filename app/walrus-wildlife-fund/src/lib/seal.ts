@@ -93,7 +93,7 @@ export async function encryptContent(
 
     const result = await sealClient.encrypt({
         threshold: SEAL_THRESHOLD,
-        packageId: process.env.PACKAGE_ID!,
+        packageId: process.env.NEXT_PUBLIC_PACKAGE_ID!,
         id,
         data,
     });
@@ -118,7 +118,7 @@ export async function createSessionKey(
 ): Promise<SessionKey> {
     const sessionKey = await SessionKey.create({
         address: suiAddress,
-        packageId: process.env.PACKAGE_ID!,
+        packageId: process.env.NEXT_PUBLIC_PACKAGE_ID!,
         ttlMin,
         suiClient,
     });
@@ -143,7 +143,7 @@ export async function buildDecryptionTx(
 
     const tx = new Transaction();
     tx.moveCall({
-        target: `${process.env.PACKAGE_ID!}::seal_approve_reader::seal_approve_reader`,
+        target: `${process.env.NEXT_PUBLIC_PACKAGE_ID!}::seal_approve_reader::seal_approve_reader`,
         arguments: [
             tx.pure.vector("u8", idBytes),
             tx.object(serviceObjectId),

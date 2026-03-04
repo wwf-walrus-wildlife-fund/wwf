@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -30,6 +31,7 @@ export default function DatasetDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { dataset } = useDatasetDetail(id);
   const { hasBought, isChecking, recheck } = useUserItemCheck(id);
   const { buy, isBuying, error: buyError } = useBuy();
@@ -58,7 +60,10 @@ export default function DatasetDetailPage({
 
   const handleBuy = async () => {
     const success = await buy(id);
-    if (success) recheck();
+    if (success) {
+      await recheck();
+      router.refresh();
+    }
   };
 
   const handleDecrypt = () => {

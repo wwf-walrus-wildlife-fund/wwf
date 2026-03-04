@@ -1,18 +1,23 @@
-import { suiClient } from "@/app/api/client";
-import { bcs } from "@mysten/sui/bcs";
-import { deriveObjectID } from "@mysten/sui/utils";
+type AnySuiClient = any;
 
+export const canRead = async (
+  datasetId: string,
+  account: string,
+  suiClient: AnySuiClient,
+): Promise<boolean> => {
+  const packageId = process.env.PACKAGE_ID;
+  if (!packageId) return false;
 
-export const canRead = async (datasetId: string, account: string) => {
-    try {
-        const accountObject = await suiClient.getObject({
-            objectId: deriveObjectID(process.env.PACKAGE_ID!, `${process.env.PACKAGE_ID}::dataset::Reader`, bcs.string().serialize(account).toBytes()),
-            include: {
-                json: true
-            }
-        })
-        return true;
-    } catch (error) {
-        return false;
-    }
-}
+  try {
+    await suiClient.getDynamicFieldObject({
+      parentId: datasetId,
+      name: {
+        type: `${packageId}::dataset::Reader`,
+        value: account,
+      },
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
