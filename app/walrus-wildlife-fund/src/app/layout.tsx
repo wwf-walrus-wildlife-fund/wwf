@@ -3,8 +3,9 @@ import { ClientProviders } from "./client-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Walrus Wildlife Fund",
-  description: "A Sui dApp for wildlife conservation",
+  title: "TuskBazaar — Data Marketplace on Sui",
+  description:
+    "Upload, monetize, buy, or rent data. Built for humans, AI agents, and LLMs. Seamless on-chain transactions with zero friction.",
 };
 
 export default function RootLayout({
