@@ -7,8 +7,7 @@ import { GlowOrb } from "@/components/glow-orb";
 import { DatasetCard } from "@/components/dataset-card";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { useTrendingDatasets } from "@/hooks/useFeed";
-import { useStats } from "@/hooks/useStats";
+import { useTrendingDatasets, useStats } from "@/hooks/useFeed";
 
 const features = [
   {

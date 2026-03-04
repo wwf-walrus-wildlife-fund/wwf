@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { FindUserForm } from "@/components/find-user-form";
+import { SearchForm } from "@/components/search-form";
 
 export default function SearchPage() {
   return (
@@ -27,7 +27,7 @@ export default function SearchPage() {
             </p>
           </motion.div>
 
-          <FindUserForm />
+          <SearchForm type="user" />
         </div>
       </div>
       <Footer />

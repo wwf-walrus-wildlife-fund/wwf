@@ -23,10 +23,7 @@ import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { useDatasetDetail } from "@/hooks/useDatasetDetail";
-import { useUserItemCheck } from "@/hooks/useUserItemCheck";
-import { useBuy } from "@/hooks/useBuy";
-import { useDecrypt } from "@/hooks/useDecrypt";
+import { useDataset } from "@/hooks/useDataset";
 
 export default function DatasetDetailPage({
   params,
@@ -35,10 +32,20 @@ export default function DatasetDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { dataset, isLoading } = useDatasetDetail(id);
-  const { hasBought, isChecking, recheck } = useUserItemCheck(id);
-  const { buy, isBuying, error: buyError } = useBuy();
-  const { decrypt, isDecrypting, decryptedData, error: decryptError } = useDecrypt();
+  const {
+    dataset,
+    isLoading,
+    hasBought,
+    isChecking,
+    recheck,
+    buy,
+    isBuying,
+    buyError,
+    decrypt,
+    isDecrypting,
+    decryptedData,
+    decryptError,
+  } = useDataset(id);
   const [copied, setCopied] = useState(false);
 
   if (isLoading) {
@@ -76,7 +83,7 @@ export default function DatasetDetailPage({
   }
 
   const handleBuy = async () => {
-    const success = await buy(id);
+    const success = await buy();
     if (success) {
       await recheck();
       router.refresh();
@@ -84,7 +91,7 @@ export default function DatasetDetailPage({
   };
 
   const handleDecrypt = async () => {
-    const result = await decrypt(id);
+    const result = await decrypt();
     if (!result) return;
     const text = await result.text();
     const txtBlob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -107,11 +114,13 @@ export default function DatasetDetailPage({
     URL.revokeObjectURL(url);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(dataset.seller || "");
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const blobId = dataset.blob_ids?.[0];
 
   return (
     <div className="min-h-screen bg-background">
@@ -211,28 +220,23 @@ export default function DatasetDetailPage({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#4834D4]/30 to-[#6C5CE7]/30 flex items-center justify-center">
-                        <span
-                          className="text-[#C4B5FD]"
-                          style={{ fontSize: "0.8rem" }}
-                        >
+                        <span className="text-[#C4B5FD]" style={{ fontSize: "0.8rem" }}>
                           <FileIcon />
                         </span>
                       </div>
-                      <div>
-                        <p
-                          className="text-white/60"
-                          style={{
-                            fontFamily: "JetBrains Mono, monospace",
-                            fontSize: "0.85rem",
-                          }}
-                        >
-                          {dataset.seller}
-                        </p>
-                      </div>
+                      <p
+                        className="text-white/60"
+                        style={{
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        {dataset.seller}
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={handleCopy}
+                        onClick={() => handleCopy(dataset.seller || "")}
                         className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
                       >
                         {copied ? (
@@ -247,24 +251,23 @@ export default function DatasetDetailPage({
                     </div>
                   </div>
                 </div>
-                <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
-                  <h3
-                    className="text-white/60 mb-4"
-                    style={{ fontSize: "0.9rem" }}
-                  >
-                    Blob ID
-                  </h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#4834D4]/30 to-[#6C5CE7]/30 flex items-center justify-center">
-                        <span
-                          className="text-[#C4B5FD]"
-                          style={{ fontSize: "0.8rem" }}
-                        >
-                          <Dog />
-                        </span>
-                      </div>
-                      <div>
+
+                {/* Blob ID */}
+                {blobId && (
+                  <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                    <h3
+                      className="text-white/60 mb-4"
+                      style={{ fontSize: "0.9rem" }}
+                    >
+                      Blob ID
+                    </h3>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#4834D4]/30 to-[#6C5CE7]/30 flex items-center justify-center">
+                          <span className="text-[#C4B5FD]" style={{ fontSize: "0.8rem" }}>
+                            <Dog />
+                          </span>
+                        </div>
                         <p
                           className="text-white/60"
                           style={{
@@ -272,27 +275,27 @@ export default function DatasetDetailPage({
                             fontSize: "0.85rem",
                           }}
                         >
-                          {dataset.blob_ids[0]}
+                          {blobId}
                         </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleCopy}
-                        className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
-                      >
-                        {copied ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-4 h-4" />
-                        )}
-                      </button>
-                      <Link href={"https://walruscan.com/testnet/blob/" + dataset.blob_ids[0]} className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all">
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleCopy(blobId)}
+                          className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
+                        >
+                          {copied ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
+                        </button>
+                        <Link href={"https://walruscan.com/testnet/blob/" + blobId} className="p-2 rounded-lg text-white/20 hover:text-white/40 hover:bg-white/5 transition-all">
+                          <ExternalLink className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
 
               {/* Sidebar - Purchase / Decrypt */}
@@ -306,7 +309,6 @@ export default function DatasetDetailPage({
                       </p>
                     </div>
                   ) : hasBought ? (
-                    /* Decrypt flow — user owns this dataset */
                     <div className="space-y-4">
                       <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center">
                         <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
@@ -359,7 +361,6 @@ export default function DatasetDetailPage({
                       </p>
                     </div>
                   ) : (
-                    /* Buy flow — user hasn't purchased yet */
                     <div>
                       <div className="flex items-center gap-2 justify-center mb-4">
                         <Lock className="w-4 h-4 text-white/20" />

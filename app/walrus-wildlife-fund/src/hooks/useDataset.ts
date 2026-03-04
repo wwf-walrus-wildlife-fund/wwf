@@ -1,0 +1,248 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  useCurrentAccount,
+  useCurrentClient,
+  useDAppKit,
+} from "@mysten/dapp-kit-react";
+import { Transaction } from "@mysten/sui/transactions";
+import { bcs } from "@mysten/sui/bcs";
+import { deriveObjectID, normalizeSuiAddress } from "@mysten/sui/utils";
+import type { SessionKey } from "@mysten/seal";
+import type { Dataset } from "@/lib/types";
+import { extractFields, toUiDataset, canRead } from "@/lib/sui-helpers";
+import { createSessionKey, decryptContent } from "@/lib/seal";
+import { downloadFromWalrus } from "@/lib/walrus";
+
+interface UseDatasetReturn {
+  dataset: Dataset | null;
+  isLoading: boolean;
+  hasBought: boolean;
+  isChecking: boolean;
+  recheck: () => Promise<void>;
+  buy: () => Promise<boolean>;
+  isBuying: boolean;
+  buyError: string | null;
+  decrypt: () => Promise<Blob | null>;
+  isDecrypting: boolean;
+  decryptedData: Blob | null;
+  decryptError: string | null;
+  resetDecrypt: () => void;
+}
+
+export function useDataset(id: string): UseDatasetReturn {
+  const currentAccount = useCurrentAccount();
+  const client = useCurrentClient();
+  const { signAndExecuteTransaction, signPersonalMessage } = useDAppKit();
+
+  const [dataset, setDataset] = useState<Dataset | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [hasBought, setHasBought] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+
+  const [isBuying, setIsBuying] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
+
+  const [isDecrypting, setIsDecrypting] = useState(false);
+  const [decryptedData, setDecryptedData] = useState<Blob | null>(null);
+  const [decryptError, setDecryptError] = useState<string | null>(null);
+
+  // ── Fetch dataset object ──────────────────────────────────
+  useEffect(() => {
+    const fetchDataset = async () => {
+      setIsLoading(true);
+      try {
+        const object = await client.getObject({
+          objectId: id,
+          include: { json: true, owner: true },
+        });
+        const fields = extractFields(object);
+        if (!fields) {
+          setDataset(null);
+          return;
+        }
+        setDataset(toUiDataset(id, fields));
+      } catch {
+        setDataset(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDataset();
+  }, [client, id]);
+
+  // ── Check ownership / read access ────────────────────────
+  const checkAccess = useCallback(async () => {
+    if (!currentAccount?.address) {
+      setHasBought(false);
+      setIsChecking(false);
+      return;
+    }
+    setIsChecking(true);
+    try {
+      const hasAccess = await canRead(id, currentAccount.address, client);
+      setHasBought(hasAccess);
+    } catch {
+      setHasBought(false);
+    } finally {
+      setIsChecking(false);
+    }
+  }, [currentAccount?.address, client, id]);
+
+  useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
+
+  // ── Buy ───────────────────────────────────────────────────
+  const buy = useCallback(async (): Promise<boolean> => {
+    setIsBuying(true);
+    setBuyError(null);
+    try {
+      if (!currentAccount) throw new Error("No wallet connected");
+      const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
+      if (!packageId) throw new Error("Missing NEXT_PUBLIC_PACKAGE_ID");
+
+      const datasetObject = await client.getObject({
+        objectId: id,
+        include: { json: true },
+      });
+      const fields = datasetObject.object.json;
+      if (!fields) throw new Error(`Dataset object not found: ${id}`);
+
+      const priceMist = BigInt(fields!.price_sui as string);
+      const namespaceId = fields.derivation_id as string;
+      if (!namespaceId) throw new Error("Dataset derivation namespace is missing");
+
+      const accountId = deriveObjectID(
+        namespaceId,
+        `${packageId}::account::AccountTag`,
+        bcs.Address.serialize(currentAccount.address).toBytes(),
+      );
+      const accountObject = await client
+        .getObject({ objectId: accountId, include: { json: true } })
+        .catch(() => null);
+      const accountExists = Boolean(accountObject?.object?.json);
+
+      const tx = new Transaction();
+      let newAccount;
+      if (!accountExists) {
+        newAccount = tx.moveCall({
+          target: `${packageId}::account::new`,
+          arguments: [tx.object(namespaceId)],
+        });
+      }
+
+      const [paymentCoin] = tx.splitCoins(tx.gas, [tx.pure.u64(priceMist)]);
+      tx.moveCall({
+        target: `${packageId}::dataset::pay_sui_to_read`,
+        arguments: [
+          tx.object(id),
+          paymentCoin,
+          newAccount ? newAccount : tx.object(accountId),
+        ],
+      });
+
+      if (!accountExists && newAccount) {
+        tx.moveCall({
+          target: `${packageId}::account::share`,
+          arguments: [newAccount],
+        });
+      }
+
+      await signAndExecuteTransaction({ transaction: tx });
+      return true;
+    } catch (err) {
+      setBuyError(err instanceof Error ? err.message : "Purchase failed");
+      return false;
+    } finally {
+      setIsBuying(false);
+    }
+  }, [client, currentAccount, id, signAndExecuteTransaction]);
+
+  // ── Decrypt ───────────────────────────────────────────────
+  const createSignedSessionKey = useCallback(async (): Promise<SessionKey> => {
+    if (!currentAccount) throw new Error("No wallet connected");
+    const sessionKey = await createSessionKey(
+      normalizeSuiAddress(currentAccount.address),
+      client,
+      10,
+    );
+    const signResult = await signPersonalMessage({
+      message: sessionKey.getPersonalMessage(),
+    });
+    const signResultAny = signResult as any;
+    const signaturePayload =
+      typeof signResult === "string"
+        ? signResult
+        : signResultAny?.signature ?? signResultAny?.result?.signature;
+    if (!signaturePayload) {
+      throw new Error("Wallet did not return a personal message signature");
+    }
+    await sessionKey.setPersonalMessageSignature(signaturePayload);
+    return sessionKey;
+  }, [client, currentAccount, signPersonalMessage]);
+
+  const decrypt = useCallback(async (): Promise<Blob | null> => {
+    setIsDecrypting(true);
+    setDecryptError(null);
+    try {
+      const fields = extractFields(
+        await client.getObject({ objectId: id, include: { json: true } }),
+      );
+      if (!fields) throw new Error(`Dataset not found: ${id}`);
+
+      if (!currentAccount?.address) throw new Error("No wallet connected");
+      const hasAccess = await canRead(id, currentAccount.address, client);
+      if (!hasAccess) throw new Error("You do not have read access to this dataset");
+
+      const blobIds = dataset?.blob_ids ?? [];
+      if (blobIds.length === 0) throw new Error("Dataset has no blob IDs");
+
+      const version = Number(fields?.envelope?.version ?? 0);
+      if (!Number.isFinite(version)) throw new Error("Invalid envelope version on dataset");
+
+      const encryptedBlob = await downloadFromWalrus(blobIds[0]);
+      const sessionKey = await createSignedSessionKey();
+      const plaintext = await decryptContent(client, encryptedBlob, id, version, sessionKey);
+
+      const plaintextBuffer = plaintext.buffer.slice(
+        plaintext.byteOffset,
+        plaintext.byteOffset + plaintext.byteLength,
+      ) as ArrayBuffer;
+      const blob = new Blob([plaintextBuffer], { type: "application/octet-stream" });
+      setDecryptedData(blob);
+      return blob;
+    } catch (err) {
+      const rawMessage = err instanceof Error ? err.message : "Decryption failed";
+      const message = rawMessage.includes("Not enough shares")
+        ? "Seal could not recover enough key shares. This usually means access is denied, identity/version does not match, or the blob was not encrypted with this Seal identity."
+        : rawMessage;
+      setDecryptError(message);
+      return null;
+    } finally {
+      setIsDecrypting(false);
+    }
+  }, [client, createSignedSessionKey, currentAccount?.address, dataset?.blob_ids, id]);
+
+  const resetDecrypt = useCallback(() => {
+    setIsDecrypting(false);
+    setDecryptedData(null);
+    setDecryptError(null);
+  }, []);
+
+  return {
+    dataset,
+    isLoading,
+    hasBought,
+    isChecking,
+    recheck: checkAccess,
+    buy,
+    isBuying,
+    buyError,
+    decrypt,
+    isDecrypting,
+    decryptedData,
+    decryptError,
+    resetDecrypt,
+  };
+}

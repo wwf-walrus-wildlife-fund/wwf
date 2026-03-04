@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { FindDatasetForm } from "@/components/find-dataset-form";
+import { SearchForm } from "@/components/search-form";
 
 export default function DatasetSearchPage() {
   return (
@@ -27,7 +27,7 @@ export default function DatasetSearchPage() {
             </p>
           </motion.div>
 
-          <FindDatasetForm />
+          <SearchForm type="dataset" />
         </div>
       </div>
       <Footer />

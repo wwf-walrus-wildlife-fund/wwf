@@ -10,6 +10,9 @@ export interface Dataset {
   expiresIn: string;
   seller: string;
   verified: boolean;
+  imageUrl?: string;
+  projectUrl?: string;
+  blob_ids?: string[];
 }
 
 export interface Stat {

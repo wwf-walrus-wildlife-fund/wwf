@@ -1,33 +1,12 @@
 import { useState, useEffect } from "react";
 import type { Dataset } from "@/lib/types";
+import { toUiDataset } from "@/lib/sui-helpers";
 import { useCurrentAccount } from "@mysten/dapp-kit-react";
 
 interface DashboardStat {
   label: string;
   value: string;
   key: string;
-}
-
-function toUiDataset(raw: any, fallbackId: string): Dataset {
-  const id = String(raw?.id ?? fallbackId);
-  const priceMist = Number(raw?.price_sui ?? 0);
-  const priceSui = Number.isFinite(priceMist)
-    ? (priceMist / 1_000_000_000).toString()
-    : "0";
-
-  return {
-    id,
-    name: String(raw?.name ?? "Untitled Dataset"),
-    description: String(raw?.description ?? ""),
-    category: String(raw?.project ?? "Other"),
-    price: priceSui,
-    size: "N/A",
-    format: "Encrypted",
-    downloads: 0,
-    expiresIn: "N/A",
-    seller: String(raw?.funds_receiver ?? ""),
-    verified: false,
-  };
 }
 
 export function useDashboard(targetAddress?: string): {
@@ -77,11 +56,11 @@ export function useDashboard(targetAddress?: string): {
 
         const ownRaw = Array.isArray(data?.own_datasets) ? data.own_datasets : [];
         const readRaw = Array.isArray(data?.read_datasets) ? data.read_datasets : [];
-        const ownDatasets = ownRaw.map((d: any, idx: number) =>
-          toUiDataset(d, `own-${idx}`),
+        const ownDatasets = ownRaw.map((d: any) =>
+          toUiDataset(String(d?.id ?? ""), d),
         );
-        const readDatasets = readRaw.map((d: any, idx: number) =>
-          toUiDataset(d, `read-${idx}`),
+        const readDatasets = readRaw.map((d: any) =>
+          toUiDataset(String(d?.id ?? ""), d),
         );
 
         setPublishedDatasets(ownDatasets);
@@ -93,7 +72,6 @@ export function useDashboard(targetAddress?: string): {
           { key: "storage", label: "Active Storage", value: "0 GB" },
         ]);
       } catch (err) {
-        console.error("Failed to fetch dashboard:", err);
         setPublishedDatasets([]);
         setPurchasedDatasets([]);
         setStats([

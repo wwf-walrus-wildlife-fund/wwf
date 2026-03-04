@@ -1,45 +1,7 @@
 import { bcs } from "@mysten/sui/bcs";
 import { deriveObjectID } from "@mysten/sui/utils";
+import { extractFields, extractIdList, getObjectAny } from "@/lib/sui-helpers";
 import { suiClient } from "../client";
-
-function extractFields(obj: any): any | null {
-  return obj?.data?.content?.fields ?? obj?.object?.json ?? null;
-}
-
-function refToId(value: any): string | null {
-  if (typeof value === "string") return value;
-  if (typeof value?.id === "string") return value.id;
-  if (typeof value?.objectId === "string") return value.objectId;
-  return null;
-}
-
-function extractIdList(value: any): string[] {
-  const refs = Array.isArray(value)
-    ? value
-    : Array.isArray(value?.contents)
-      ? value.contents
-      : Array.isArray(value?.fields?.contents)
-        ? value.fields.contents
-        : [];
-
-  return refs
-    .map(refToId)
-    .filter((id: string | null): id is string => Boolean(id));
-}
-
-async function getObjectAny(id: string): Promise<any> {
-  try {
-    return await (suiClient as any).getObject({
-      id,
-      options: { showContent: true, showOwner: true, showType: true },
-    });
-  } catch {
-    return (suiClient as any).getObject({
-      objectId: id,
-      include: { json: true, owner: true },
-    });
-  }
-}
 
 async function getAccountObject(userAddress: string) {
   const packageId = process.env.PACKAGE_ID ?? process.env.NEXT_PUBLIC_PACKAGE_ID;
@@ -56,7 +18,7 @@ async function getAccountObject(userAddress: string) {
   );
 
   try {
-    return await getObjectAny(accountObjectId);
+    return await getObjectAny(suiClient, accountObjectId);
   } catch {
     return null;
   }
@@ -83,7 +45,7 @@ export async function getUserDatasets(
   const objects = await Promise.all(
     allIds.map(async (id) => {
       try {
-        return await getObjectAny(id);
+        return await getObjectAny(suiClient, id);
       } catch {
         return null;
       }

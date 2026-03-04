@@ -6,7 +6,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { bcs } from '@mysten/sui/bcs';
 import { deriveObjectID } from '@mysten/sui/utils';
 import { getSealClient, buildSealId, SEAL_THRESHOLD } from '@/lib/seal';
-import { normalizeWalrusEpochs, queryWalrusBlob, uploadToWalrus } from '@/lib/walrus';
+import { normalizeWalrusEpochs, uploadToWalrus } from '@/lib/walrus';
 
 // ============================================================
 // Types
@@ -132,16 +132,7 @@ export function useUpload(): UseUploadReturn {
                     `${packageId}::account::AccountTag`,
                     bcs.Address.serialize(account.address).toBytes(),
                 );
-                console.info('[useUpload] derived ids', {
-                    sender: account.address,
-                    platformObjectId,
-                    datasetCounter: counter,
-                    datasetObjectId,
-                    accountObjectId,
-                });
-
                 // Ensure the caller Account exists before using it as input object.
-                // If missing, create+share it once for this address.
                 let accountObj: any = null;
                 try {
                     accountObj = await (suiClient as any).getObject({
@@ -152,16 +143,9 @@ export function useUpload(): UseUploadReturn {
                     accountObj = null;
                 }
                 const accountExists = Boolean(accountObj?.object?.json || accountObj?.data?.content);
-                console.info('[useUpload] account lookup', {
-                    accountObjectId,
-                    exists: accountExists,
-                });
                 let newAccount;
 
                 if (!accountExists) {
-                    console.info('[useUpload] creating missing account object', {
-                        accountObjectId,
-                    });
                     newAccount = tx.moveCall({
                         target: `${packageId}::account::new`,
                         arguments: [tx.object(platformObjectId)],
@@ -185,19 +169,7 @@ export function useUpload(): UseUploadReturn {
                 setProgress(makeProgress('uploading', 50, 'Uploading to Walrus…'));
                 const epochs = normalizeWalrusEpochs(params.storageDays);
                 const { blobId } = await uploadToWalrus(encryptedData, epochs);
-                try {
-                    await queryWalrusBlob(blobId);
-                } catch (queryErr) {
-                    console.warn('[useUpload] Walrus blob query failed', {
-                        blobId,
-                        error: queryErr,
-                    });
-                }
-
-                // ── 5. Publish metadata (envelope bytes unused in Seal-full-blob flow) ──
-                setProgress(makeProgress('publishing-tx', 70, 'Publishing metadata…'));
-
-                // ── 6. Build & execute on-chain transaction ──
+                // ── 5. Build & execute on-chain transaction ──
                 setProgress(makeProgress('publishing-tx', 80, 'Publishing on-chain…'));
 
                 const priceMist = BigInt(
@@ -243,7 +215,6 @@ export function useUpload(): UseUploadReturn {
                 return datasetObjectId;
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : 'Upload failed';
-                console.error('[useUpload] error:', err);
                 setError(errMsg);
                 setProgress(makeProgress('error', 0, errMsg));
                 return null;

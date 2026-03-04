@@ -92,39 +92,16 @@ export async function uploadToWalrus(
     }
 
     const result = await response.json();
-    console.info("[walrus] upload response", {
-        url,
-        requestedEpochs: epochs,
-        safeEpochs,
-        status: response.status,
-        response: result,
-    });
 
     if (result.newlyCreated) {
-        const uploaded = {
+        return {
             blobId: result.newlyCreated.blobObject.blobId,
             isNew: true,
         };
-        console.info("[walrus] upload success", {
-            ...uploaded,
-            queryUrl: `${WALRUS_AGGREGATOR_URL}/v1/blobs/${uploaded.blobId}`,
-        });
-        return {
-            blobId: uploaded.blobId,
-            isNew: uploaded.isNew,
-        };
     } else if (result.alreadyCertified) {
-        const uploaded = {
+        return {
             blobId: result.alreadyCertified.blobId,
             isNew: false,
-        };
-        console.info("[walrus] upload success", {
-            ...uploaded,
-            queryUrl: `${WALRUS_AGGREGATOR_URL}/v1/blobs/${uploaded.blobId}`,
-        });
-        return {
-            blobId: uploaded.blobId,
-            isNew: uploaded.isNew,
         };
     }
 
@@ -150,30 +127,6 @@ export async function downloadFromWalrus(
 
     const arrayBuffer = await response.arrayBuffer();
     return new Uint8Array(arrayBuffer);
-}
-
-/**
- * Upload already-encrypted data to Walrus and return the blob ID.
- */
-export async function uploadEncryptedContent(
-    encryptedData: Uint8Array
-): Promise<string> {
-    const result = await uploadToWalrus(encryptedData);
-    return result.blobId;
-}
-
-// ============================================================
-// Public image upload (avatars, banners — NOT encrypted)
-// ============================================================
-
-/**
- * Upload a public image file to Walrus (no encryption).
- * Returns the Walrus blob ID.
- */
-export async function uploadPublicImage(file: File): Promise<string> {
-    const buffer = new Uint8Array(await file.arrayBuffer());
-    const result = await uploadToWalrus(buffer);
-    return result.blobId;
 }
 
 /**
@@ -209,7 +162,6 @@ export async function queryWalrusBlob(blobId: string): Promise<WalrusBlobQueryRe
         }
     }
 
-    console.info("[walrus] blob query result", result);
     return result;
 }
 

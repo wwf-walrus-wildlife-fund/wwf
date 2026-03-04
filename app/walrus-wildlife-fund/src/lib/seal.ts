@@ -63,13 +63,7 @@ export function getSealClient(suiClient: AnySuiClient): SealClient {
             ? { apiKeyName: sealApiKeyName, apiKey: sealApiKey }
             : {};
 
-        console.info("[seal] initializing client", {
-            keyServers: keyServerObjectIds,
-            hasApiKey: Boolean(sealApiKey),
-            apiKeyName: sealApiKey ? sealApiKeyName : null,
-        });
-
-        sealClientInstance = new SealClient({
+            sealClientInstance = new SealClient({
             suiClient,
             serverConfigs: keyServerObjectIds.map((id) => ({
                 objectId: id,
@@ -100,35 +94,6 @@ export function buildSealId(serviceObjectId: string, postId: string | number): s
     combined.set(postBytes, serviceBytes.length);
 
     return toHex(combined);
-}
-
-// ============================================================
-// Encryption
-// ============================================================
-
-/**
- * Encrypt content using Seal.
- */
-export async function encryptContent(
-    suiClient: AnySuiClient,
-    data: Uint8Array,
-    serviceObjectId: string,
-    postId: string | number
-): Promise<{ encryptedBytes: Uint8Array; backupKey: Uint8Array }> {
-    const sealClient = getSealClient(suiClient);
-    const id = buildSealId(serviceObjectId, postId);
-
-    const result = await sealClient.encrypt({
-        threshold: SEAL_THRESHOLD,
-        packageId: process.env.NEXT_PUBLIC_PACKAGE_ID!,
-        id,
-        data,
-    });
-
-    return {
-        encryptedBytes: result.encryptedObject as Uint8Array,
-        backupKey: result.key as Uint8Array,
-    };
 }
 
 // ============================================================
