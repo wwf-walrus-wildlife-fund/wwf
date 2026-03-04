@@ -166,10 +166,7 @@ export function useUpload(): UseUploadReturn {
                         target: `${packageId}::account::new`,
                         arguments: [tx.object(platformObjectId)],
                     });
-                    tx.moveCall({
-                        target: `${packageId}::account::share`,
-                        arguments: [newAccount],
-                    });
+
                 }
 
                 // ── 3. Seal-encrypt full dataset bytes ──
@@ -228,6 +225,13 @@ export function useUpload(): UseUploadReturn {
                     target: `${packageId}::dataset::share`,
                     arguments: [dataset],
                 });
+
+                if (!accountExists && newAccount) {
+                    tx.moveCall({
+                        target: `${packageId}::account::share`,
+                        arguments: [newAccount],
+                    });
+                }
 
                 await signAndExecuteTransaction({
                     transaction: tx,
