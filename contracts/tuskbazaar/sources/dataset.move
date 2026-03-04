@@ -24,6 +24,7 @@ public struct Dataset has key {
     derivation_key: String,
     derivation_id: ID,
     envelope: Envelope,
+    blob_ids: VecSet<String>, // u256 really, but easier to parse from explorers etc.
 }
 
 public struct Envelope has store {
@@ -45,6 +46,7 @@ public(package) fun new_derived(
     project: String,
     project_url: String,
     envelope: vector<u8>,
+    blob_ids: VecSet<String>,
 ): Dataset {
     let derivation_id = parent.to_inner();
     let id = derived_object::claim(parent, der_key);
@@ -59,6 +61,7 @@ public(package) fun new_derived(
         derivation_key: der_key,
         derivation_id,
         envelope: Envelope { encrypted_key: envelope, version: 0 },
+        blob_ids,
     }
 }
 

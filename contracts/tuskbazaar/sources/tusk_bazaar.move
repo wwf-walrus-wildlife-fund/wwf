@@ -31,6 +31,7 @@ public fun new_dataset(
     project: String,
     project_url: String,
     envelope: vector<u8>,
+    blob_ids: vector<String>,
 ): Dataset {
     assert!(publ.from_package<TUSK_BAZAAR>(), EInvalidPublisher);
     dataset::new_derived(
@@ -43,5 +44,6 @@ public fun new_dataset(
         project,
         project_url,
         envelope,
+        vec_set::from_keys(blob_ids),
     )
 }
