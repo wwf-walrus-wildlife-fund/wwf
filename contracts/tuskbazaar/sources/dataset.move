@@ -1,27 +1,30 @@
 module tusk_bazaar::dataset;
 
 use std::string::String;
-use sui::{derived_object, dynamic_field as df, vec_set::VecSet};
+use sui::{coin::Coin, derived_object, dynamic_field as df, sui::SUI, vec_set::VecSet};
+use tusk_bazaar::{account::Account, tusk_bazaar::TuskBazaarNamespace};
 
 use fun df::add as UID.df_add;
-use fun df::remove as UID.df_remove;
 use fun df::exists_ as UID.df_exists;
 
-const ENotAdmin: u64 = 0;
-const EInvalidAdminProof: u64 = 1;
+const EInvalidPayment: u64 = 1;
+const ENotYourAccount: u64 = 3;
 
+/// Its UID is derived by TuskBazaarNamespace.id + counter at current moment (incr_index)
 public struct Dataset has key {
     id: UID,
-    admins: VecSet<address>,
+    owner_id: ID,
     name: String,
     description: String,
     image_url: String,
     project: String,
     project_url: String,
-    derivation_key: String,
+    incr_index: u64,
     derivation_id: ID,
     envelope: Envelope,
     blob_ids: VecSet<String>, // u256 really, but easier to parse from explorers etc.
+    price_sui: u64,
+    funds_receiver: address,
 }
 
 public struct Envelope has store {
@@ -29,14 +32,12 @@ public struct Envelope has store {
     version: u64,
 }
 
-public struct AdminProof(ID) has drop;
-
+// How it is derived as DF
 public struct Reader(address) has copy, drop, store;
 
-public(package) fun new_derived(
-    parent: &mut UID,
-    der_key: String,
-    admins: VecSet<address>,
+public fun new_derived(
+    parent: &mut TuskBazaarNamespace,
+    account: &mut Account,
     name: String,
     description: String,
     image_url: String,
@@ -44,78 +45,61 @@ public(package) fun new_derived(
     project_url: String,
     envelope: vector<u8>,
     blob_ids: VecSet<String>,
+    price_sui: u64,
+    funds_receiver: address,
+    ctx: &TxContext,
 ): Dataset {
-    let derivation_id = parent.to_inner();
-    let id = derived_object::claim(parent, der_key);
+    let sender = ctx.sender();
+    assert!(account.owner() == sender, ENotYourAccount);
+    let derivation_id = object::id(parent);
+    let incr_index = parent.get_and_increment_counter();
+    let mut id = derived_object::claim(parent.uid_mut(), incr_index);
+    // Add Account owner as reader too.
+    id.df_add(Reader(sender), false);
+    account.add_own_dataset(id.to_inner());
     Dataset {
         id,
-        admins,
+        owner_id: object::id(account),
         name,
         description,
         image_url,
         project,
         project_url,
-        derivation_key: der_key,
+        incr_index,
         derivation_id,
         envelope: Envelope { encrypted_key: envelope, version: 0 },
         blob_ids,
+        price_sui,
+        funds_receiver,
     }
-}
-
-public(package) fun uid_mut(self: &mut Dataset): &mut UID {
-    &mut self.id
 }
 
 public fun share(self: Dataset) {
     transfer::share_object(self)
 }
 
-// TODO: In the functions below there could be more assertions about df existense.
-
-public fun authorize_address(self: &Dataset, ctx: &TxContext): AdminProof {
-    assert!(self.admins.contains(&ctx.sender()), ENotAdmin);
-    AdminProof(object::id(self))
-}
-
-public fun authorize_object(self: &Dataset, actor: &UID): AdminProof {
-    assert!(self.admins.contains(&actor.to_address()), ENotAdmin);
-    AdminProof(object::id(self))
-}
-
-public fun admin_add_admin(self: &mut Dataset, admin_proof: &AdminProof, new_admin: address) {
-    assert!(admin_proof.is_authorized(self), EInvalidAdminProof);
-    self.admins.insert(new_admin);
-}
-
-public fun admin_revoke_admin(self: &mut Dataset, admin_proof: &AdminProof, old_admin: address) {
-    assert!(admin_proof.is_authorized(self), EInvalidAdminProof);
-    self.admins.remove(&old_admin);
-}
-
-public fun admin_allow_reader(self: &mut Dataset, admin_proof: &AdminProof, reader: address) {
-    assert!(admin_proof.is_authorized(self), EInvalidAdminProof);
-    self.id.df_add(Reader(reader), false);
-}
-
-public fun admin_revoke_reader(self: &mut Dataset, admin_proof: &AdminProof, reader: address) {
-    assert!(admin_proof.is_authorized(self), EInvalidAdminProof);
-    let _: bool = self.id.df_remove(Reader(reader));
-}
-
-public fun is_authorized(admin_proof: &AdminProof, dataset: &Dataset): bool {
-    admin_proof.0 == object::id(dataset)
+public fun pay_sui_to_read(
+    self: &mut Dataset,
+    payment: Coin<SUI>,
+    account: &mut Account,
+    ctx: &TxContext,
+) {
+    let sender = ctx.sender();
+    assert!(sender == account.owner(), ENotYourAccount);
+    assert!(payment.value() == self.price_sui, EInvalidPayment);
+    transfer::public_transfer(payment, self.funds_receiver);
+    account.add_read_dataset(object::id(self));
+    self.id.df_add(Reader(sender), false);
 }
 
 public fun is_reader(self: &Dataset, reader: address): bool {
     self.id.df_exists(Reader(reader))
 }
 
-public fun dataset_id(self: &AdminProof): ID {
-    self.0
-}
-
 public fun envelope_version(self: &Dataset): u64 {
     self.envelope.version
 }
 
-// TODO key rotation
+// TODO: revoke reader if for example they share the dataset openly
+// public fun revoke_reader()
+// TODO: change price
