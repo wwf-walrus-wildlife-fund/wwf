@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #050510;
+  --foreground: #e8e8f0;
+  --card: rgba(15, 15, 35, 0.8);
+  --card-foreground: #e8e8f0;
+  --primary: #6C5CE7;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(108, 92, 231, 0.1);
+  --secondary-foreground: #a29bfe;
+  --muted: rgba(255, 255, 255, 0.05);
+  --muted-foreground: #6b7094;
+  --accent: rgba(101, 200, 208, 0.15);
+  --accent-foreground: #C4B5FD;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(108, 92, 231, 0.15);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: rgba(108, 92, 231, 0.5);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(0.75rem - 4px);
+  --radius-md: calc(0.75rem - 2px);
+  --radius-lg: 0.75rem;
+  --radius-xl: calc(0.75rem + 4px);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  font-size: 18px;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

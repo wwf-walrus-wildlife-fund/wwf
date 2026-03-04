@@ -1,0 +1,270 @@
+import { Link } from "react-router";
+import { ArrowRight, Shield, Zap, Globe, Bot, ChevronRight } from "lucide-react";
+import { motion } from "motion/react";
+import { GlowOrb } from "./GlowOrb";
+import { DatasetCard } from "./DatasetCard";
+import { datasets, stats } from "./mockData";
+import logoImg from "figma:asset/bdb728a8186761de4d21508ce9e171d914f3405a.png";
+
+export function LandingPage() {
+  const features = [
+    {
+      icon: Shield,
+      title: "zkLogin on Sui",
+      description: "Authenticate with Google, Apple, or Twitch. No wallet setup, no seed phrases.",
+      gradient: "from-[#6C5CE7] to-[#A29BFE]",
+    },
+    {
+      icon: Zap,
+      title: "Sponsored Transactions",
+      description: "Zero gas fees for users. All transactions are invisibly sponsored on-chain.",
+      gradient: "from-[#A29BFE] to-[#C4B5FD]",
+    },
+    {
+      icon: Globe,
+      title: "Decentralized Storage",
+      description: "Data stored on Walrus with configurable duration from 14 to 365 days.",
+      gradient: "from-[#65C8D0] to-[#A29BFE]",
+    },
+    {
+      icon: Bot,
+      title: "Agent-Ready APIs",
+      description: "First-class support for AI agents and LLMs to programmatically buy and consume data.",
+      gradient: "from-[#65C8D0] to-[#4834D4]",
+    },
+  ];
+
+  return (
+    <div className="relative overflow-hidden">
+      {/* Hero */}
+      <section className="relative min-h-screen flex items-center justify-center pt-16">
+        <GlowOrb color="purple" size="600px" top="-200px" left="-100px" opacity={0.12} />
+        <GlowOrb color="indigo" size="500px" top="100px" right="-150px" opacity={0.08} />
+        <GlowOrb color="cyan" size="300px" bottom="50px" left="30%" opacity={0.06} />
+
+        {/* Grid pattern overlay */}
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          {/* Logo mascot */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, type: "spring" }}
+            className="mb-6"
+          >
+            <img src={logoImg} alt="TuskBazaar Walrus" className="w-32 h-32 mx-auto object-contain drop-shadow-2xl" style={{ mixBlendMode: "screen" }} />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#6C5CE7]/20 bg-[#6C5CE7]/5 mb-8">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#65C8D0] animate-pulse" />
+              <span className="text-[#a29bfe]" style={{ fontSize: "0.8rem" }}>Powered by Sui &middot; Stored on Walrus</span>
+            </div>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1 }}
+            className="text-white mb-6 tracking-tight max-w-4xl mx-auto"
+            style={{ fontSize: "clamp(2rem, 5vw, 4rem)", lineHeight: "1.1" }}
+          >
+            The marketplace for
+            <br />
+            <span className="bg-gradient-to-r from-[#4834D4] via-[#A29BFE] to-[#65C8D0] bg-clip-text text-transparent">
+              data that moves
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-white/35 max-w-xl mx-auto mb-10"
+            style={{ fontSize: "1.05rem", lineHeight: "1.7" }}
+          >
+            Upload, monetize, buy, or rent data. Built for humans, AI agents, and LLMs.
+            Seamless on-chain transactions with zero friction.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Link
+              to="/marketplace"
+              className="group px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 flex items-center gap-2"
+            >
+              Explore Marketplace
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link
+              to="/upload"
+              className="px-8 py-3.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all duration-300"
+            >
+              Start Selling
+            </Link>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 0.6 }}
+            className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
+          >
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="text-white mb-1" style={{ fontSize: "1.5rem" }}>{stat.value}</div>
+                <div className="text-white/25" style={{ fontSize: "0.75rem", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="relative py-32 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>Built different</h2>
+            <p className="text-white/30 max-w-lg mx-auto">
+              Every interaction is designed to feel invisible. No popups, no confirmations, no friction.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {features.map((feature, i) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="group p-6 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
+              >
+                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 opacity-80 group-hover:opacity-100 transition-opacity`}>
+                  <feature.icon className="w-5 h-5 text-white" />
+                </div>
+                <h3 className="text-white mb-2" style={{ fontSize: "0.95rem" }}>{feature.title}</h3>
+                <p className="text-white/30" style={{ fontSize: "0.8rem", lineHeight: "1.6" }}>{feature.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works */}
+      <section className="relative py-24 px-4">
+        <GlowOrb color="purple" size="400px" top="0" right="10%" opacity={0.06} />
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>How it works</h2>
+            <p className="text-white/30">Three steps. No wallet required.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              { step: "01", title: "Connect", desc: "Sign in with Google, Apple, or Twitch via zkLogin. Your identity stays private." },
+              { step: "02", title: "Upload or Browse", desc: "Upload your data with a storage duration, or browse thousands of datasets in the marketplace." },
+              { step: "03", title: "Transact", desc: "Buy or rent data instantly. All transactions are gasless and sponsored on your behalf." },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                className="relative"
+              >
+                <div className="text-[#6C5CE7]/20 mb-4" style={{ fontSize: "3rem", fontFamily: "JetBrains Mono, monospace" }}>
+                  {item.step}
+                </div>
+                <h3 className="text-white mb-2">{item.title}</h3>
+                <p className="text-white/30" style={{ fontSize: "0.85rem", lineHeight: "1.7" }}>{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Datasets */}
+      <section className="relative py-24 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <h2 className="text-white mb-2" style={{ fontSize: "1.5rem" }}>Trending datasets</h2>
+              <p className="text-white/25" style={{ fontSize: "0.85rem" }}>Most popular this week</p>
+            </div>
+            <Link
+              to="/marketplace"
+              className="flex items-center gap-1 text-[#a29bfe]/60 hover:text-[#a29bfe] transition-colors"
+              style={{ fontSize: "0.85rem" }}
+            >
+              View all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {datasets.slice(0, 6).map((dataset) => (
+              <DatasetCard key={dataset.id} dataset={dataset} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="relative py-32 px-4">
+        <GlowOrb color="purple" size="500px" top="-100px" left="30%" opacity={0.1} />
+        <div className="max-w-3xl mx-auto text-center relative">
+          <div className="p-12 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
+            style={{ backdropFilter: "blur(10px)" }}>
+            <img src={logoImg} alt="TuskBazaar" className="w-16 h-16 mx-auto mb-6 object-contain opacity-80" style={{ mixBlendMode: "screen" }} />
+            <h2 className="text-white mb-4" style={{ fontSize: "1.8rem" }}>
+              Ready to monetize your data?
+            </h2>
+            <p className="text-white/30 mb-8 max-w-md mx-auto">
+              Join thousands of data providers and AI agents trading on TuskBazaar.
+            </p>
+            <Link
+              to="/upload"
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20"
+            >
+              Start Uploading <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-8 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 text-white/20" style={{ fontSize: "0.8rem" }}>
+            <img src={logoImg} alt="" className="w-5 h-5 object-contain opacity-40" style={{ mixBlendMode: "screen" }} />
+            &copy; 2026 TuskBazaar. Built on Sui.
+          </div>
+          <div className="flex items-center gap-6 text-white/20" style={{ fontSize: "0.8rem" }}>
+            <a href="#" className="hover:text-white/40 transition-colors">Docs</a>
+            <a href="#" className="hover:text-white/40 transition-colors">API</a>
+            <a href="#" className="hover:text-white/40 transition-colors">GitHub</a>
+            <a href="#" className="hover:text-white/40 transition-colors">Discord</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
