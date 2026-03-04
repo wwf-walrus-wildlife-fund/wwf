@@ -1,4 +1,4 @@
-import { datasets } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import type { Dataset } from "@/lib/types";
 
 interface DashboardStat {
@@ -13,20 +13,27 @@ export function useDashboard(): {
   stats: DashboardStat[];
   isLoading: boolean;
 } {
-  const publishedDatasets = datasets.slice(0, 4);
-  const purchasedDatasets = datasets.slice(4, 7);
+  const [publishedDatasets, setPublishedDatasets] = useState<Dataset[]>([]);
+  const [purchasedDatasets, setPurchasedDatasets] = useState<Dataset[]>([]);
+  const [stats, setStats] = useState<DashboardStat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const stats: DashboardStat[] = [
-    { key: "published", label: "Published", value: "4" },
-    { key: "purchased", label: "Purchased", value: "3" },
-    { key: "earnings", label: "Total Earnings", value: "847 SUI" },
-    { key: "storage", label: "Active Storage", value: "72.3 GB" },
-  ];
+  useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await fetch("/api/user");
+        const data = await res.json();
+        setPublishedDatasets(data.publishedDatasets);
+        setPurchasedDatasets(data.purchasedDatasets);
+        setStats(data.stats);
+      } catch (err) {
+        console.error("Failed to fetch dashboard:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchDashboard();
+  }, []);
 
-  return {
-    publishedDatasets,
-    purchasedDatasets,
-    stats,
-    isLoading: false,
-  };
+  return { publishedDatasets, purchasedDatasets, stats, isLoading };
 }

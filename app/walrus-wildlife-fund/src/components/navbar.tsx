@@ -27,7 +27,7 @@ export function Navbar() {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-18">
           <Link href="/" className="flex items-center gap-2 group">
             <span
               className="text-white tracking-wide"
