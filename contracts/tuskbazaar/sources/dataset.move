@@ -23,7 +23,12 @@ public struct Dataset has key {
     project_url: String,
     derivation_key: String,
     derivation_id: ID,
-    envelope: vector<u8>,
+    envelope: Envelope,
+}
+
+public struct Envelope has store {
+    encrypted_key: vector<u8>,
+    version: u64,
 }
 
 public struct AdminProof(ID) has drop;
@@ -53,7 +58,7 @@ public(package) fun new_derived(
         project_url,
         derivation_key: der_key,
         derivation_id,
-        envelope,
+        envelope: Envelope { encrypted_key: envelope, version: 0 },
     }
 }
 
@@ -109,4 +114,9 @@ public fun dataset_id(self: &AdminProof): ID {
     self.0
 }
 
+public fun envelope_version(self: &Dataset): u64 {
+    self.envelope.version
+}
+
+// TODO key rotation
 

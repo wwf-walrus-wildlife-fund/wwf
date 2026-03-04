@@ -1,15 +1,15 @@
 // Using SUI for now for convenience
-module tusk_bazaar::one_time_sui_pay_policy;
+module tusk_bazaar::pay_sui_to_be_reader;
 
 use std::string::String;
 use sui::{balance::{Self, Balance}, coin::Coin, derived_object, sui::SUI};
 use tusk_bazaar::dataset::{AdminProof, Dataset};
 
 const EInvalidAdminProof: u64 = 0;
-const EInvalidDatasetPolicyCombination: u64 = 1;
+const EInvalidDatasetActorCombination: u64 = 1;
 const EInvalidPayment: u64 = 2;
 
-public struct SuiPayPolicy has key {
+public struct PaySuiToBeReaderActor has key {
     id: UID,
     derivation_key: String,
     dataset_id: ID,
@@ -17,11 +17,11 @@ public struct SuiPayPolicy has key {
     funds: Balance<SUI>,
 }
 
-public fun create_policy(parent: &mut Dataset, admin_proof: &AdminProof, price: u64): SuiPayPolicy {
+public fun create_policy(parent: &mut Dataset, admin_proof: &AdminProof, price: u64): PaySuiToBeReaderActor {
     assert!(admin_proof.is_authorized(parent), EInvalidAdminProof);
-    let derivation_key = b"SuiPayPolicy".to_string();
+    let derivation_key = b"PaySuiToBeReaderActor".to_string();
     let id = derived_object::claim(parent.uid_mut(), derivation_key);
-    SuiPayPolicy {
+    PaySuiToBeReaderActor {
         id,
         derivation_key,
         dataset_id: object::id(parent),
@@ -30,17 +30,17 @@ public fun create_policy(parent: &mut Dataset, admin_proof: &AdminProof, price: 
     }
 }
 
-public fun share(self: SuiPayPolicy) {
+public fun share(self: PaySuiToBeReaderActor) {
     transfer::share_object(self)
 }
 
 public fun pay_to_read(
-    self: &mut SuiPayPolicy,
+    self: &mut PaySuiToBeReaderActor,
     dataset: &mut Dataset,
     payment: Coin<SUI>,
     ctx: &TxContext,
 ) {
-    assert!(self.dataset_id == object::id(dataset), EInvalidDatasetPolicyCombination);
+    assert!(self.dataset_id == object::id(dataset), EInvalidDatasetActorCombination);
     assert!(payment.value() == self.price, EInvalidPayment);
     self.funds.join(payment.into_balance());
     let admin_proof = dataset.authorize_object(&self.id);
@@ -48,12 +48,12 @@ public fun pay_to_read(
 
 }
 
-public fun change_price(self: &mut SuiPayPolicy, admin_proof: &AdminProof, new_price: u64) {
+public fun change_price(self: &mut PaySuiToBeReaderActor, admin_proof: &AdminProof, new_price: u64) {
     assert!(admin_proof.dataset_id() == self.dataset_id, EInvalidAdminProof);
     self.price = new_price;
 }
 
-public fun withdraw_funds(self: &mut SuiPayPolicy, admin_proof: &AdminProof, ctx: &mut TxContext): Coin<SUI> {
+public fun withdraw_funds(self: &mut PaySuiToBeReaderActor, admin_proof: &AdminProof, ctx: &mut TxContext): Coin<SUI> {
     assert!(admin_proof.dataset_id() == self.dataset_id, EInvalidAdminProof);
     self.funds.withdraw_all().into_coin(ctx)
 }
