@@ -30,7 +30,7 @@ function toUiDataset(raw: any, fallbackId: string): Dataset {
   };
 }
 
-export function useDashboard(): {
+export function useDashboard(targetAddress?: string): {
   publishedDatasets: Dataset[];
   purchasedDatasets: Dataset[];
   stats: DashboardStat[];
@@ -46,7 +46,8 @@ export function useDashboard(): {
 
   useEffect(() => {
     async function fetchDashboard() {
-      if (!account?.address) {
+      const address = targetAddress ?? account?.address;
+      if (!address) {
         setPublishedDatasets([]);
         setPurchasedDatasets([]);
         setStats([
@@ -65,7 +66,7 @@ export function useDashboard(): {
 
       try {
         const res = await fetch(
-          `/api/user/datasets?userId=${encodeURIComponent(account.address)}`,
+          `/api/user/${encodeURIComponent(address)}`,
           { method: "GET" },
         );
         const data = await res.json();
@@ -110,7 +111,7 @@ export function useDashboard(): {
     }
 
     fetchDashboard();
-  }, [account?.address]);
+  }, [account?.address, targetAddress]);
 
   return { publishedDatasets, purchasedDatasets, stats, isLoading, error };
 }

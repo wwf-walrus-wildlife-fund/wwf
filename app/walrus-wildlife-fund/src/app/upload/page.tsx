@@ -17,6 +17,7 @@ import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useUpload } from "@/hooks/useUpload";
+import { WALRUS_MAX_EPOCHS } from "@/lib/walrus";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
@@ -29,7 +30,7 @@ function formatSize(bytes: number) {
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const [storageDays, setStorageDays] = useState(90);
+  const [storageDays, setStorageDays] = useState(30);
   const [price, setPrice] = useState("10");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -305,7 +306,7 @@ export default function UploadPage() {
                 <input
                   type="range"
                   min={14}
-                  max={365}
+                  max={WALRUS_MAX_EPOCHS}
                   value={storageDays}
                   onChange={(e) => setStorageDays(Number(e.target.value))}
                   className="w-full"
@@ -315,7 +316,7 @@ export default function UploadPage() {
                   style={{ fontSize: "0.7rem" }}
                 >
                   <span>14 days</span>
-                  <span>365 days</span>
+                  <span>{WALRUS_MAX_EPOCHS} days</span>
                 </div>
               </div>
 
@@ -326,7 +327,7 @@ export default function UploadPage() {
                   style={{ fontSize: "0.75rem" }}
                 >
                   Estimated storage cost: ~{storageCost} SUI &middot; Stored on
-                  Walrus
+                  Walrus (max {WALRUS_MAX_EPOCHS} days on testnet)
                 </span>
               </div>
             </motion.div>

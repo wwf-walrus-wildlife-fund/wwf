@@ -3,13 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, Upload, ShoppingBag, LayoutDashboard } from "lucide-react";
+import {
+  Menu,
+  X,
+  Upload,
+  ShoppingBag,
+  LayoutDashboard,
+  Search,
+  FileSearch,
+} from "lucide-react";
 import { ConnectButton } from "@mysten/dapp-kit-react";
 
 const links = [
   { href: "/marketplace", label: "Marketplace", icon: ShoppingBag },
   { href: "/upload", label: "Upload", icon: Upload },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/search", label: "Find User", icon: Search },
+  { href: "/search/dataset", label: "Find Dataset", icon: FileSearch },
 ];
 
 export function Navbar() {

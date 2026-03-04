@@ -6,7 +6,7 @@ import { Transaction } from '@mysten/sui/transactions';
 import { bcs } from '@mysten/sui/bcs';
 import { deriveObjectID } from '@mysten/sui/utils';
 import { getSealClient, buildSealId, SEAL_THRESHOLD } from '@/lib/seal';
-import { uploadToWalrus } from '@/lib/walrus';
+import { normalizeWalrusEpochs, queryWalrusBlob, uploadToWalrus } from '@/lib/walrus';
 
 // ============================================================
 // Types
@@ -139,6 +139,52 @@ export function useUpload(): UseUploadReturn {
                     'u64',
                     bcs.u64().serialize(counter).toBytes(),
                 );
+                const accountObjectId = deriveObjectID(
+                    platformObjectId,
+                    `${packageId}::account::AccountTag`,
+                    bcs.Address.serialize(account.address).toBytes(),
+                );
+                console.info('[useUpload] derived ids', {
+                    sender: account.address,
+                    platformObjectId,
+                    datasetCounter: counter,
+                    datasetObjectId,
+                    accountObjectId,
+                });
+
+                // Ensure the caller Account exists before using it as input object.
+                // If missing, create+share it once for this address.
+                let accountObj: any = null;
+                try {
+                    accountObj = await (suiClient as any).getObject({
+                        objectId: accountObjectId,
+                        include: { json: true },
+                    });
+                } catch {
+                    accountObj = null;
+                }
+                const accountExists = Boolean(accountObj?.object?.json || accountObj?.data?.content);
+                console.info('[useUpload] account lookup', {
+                    accountObjectId,
+                    exists: accountExists,
+                });
+                if (!accountExists) {
+                    console.info('[useUpload] creating missing account object', {
+                        accountObjectId,
+                    });
+                    const setupTx = new Transaction();
+                    const newAccount = setupTx.moveCall({
+                        target: `${packageId}::account::new`,
+                        arguments: [setupTx.object(platformObjectId)],
+                    });
+                    setupTx.moveCall({
+                        target: `${packageId}::account::share`,
+                        arguments: [newAccount],
+                    });
+                    await signAndExecuteTransaction({
+                        transaction: setupTx,
+                    });
+                }
 
                 // ── 3. AES-256-GCM encrypt file with random DEK ──
                 setProgress(makeProgress('encrypting', 30, 'Encrypting data…'));
@@ -147,8 +193,16 @@ export function useUpload(): UseUploadReturn {
 
                 // ── 4. Upload encrypted blob to Walrus ──
                 setProgress(makeProgress('uploading', 50, 'Uploading to Walrus…'));
-                const epochs = Math.max(1, Math.ceil(params.storageDays));
+                const epochs = normalizeWalrusEpochs(params.storageDays);
                 const { blobId } = await uploadToWalrus(encryptedData, epochs);
+                try {
+                    await queryWalrusBlob(blobId);
+                } catch (queryErr) {
+                    console.warn('[useUpload] Walrus blob query failed', {
+                        blobId,
+                        error: queryErr,
+                    });
+                }
 
                 // ── 5. Seal-encrypt the DEK → on-chain envelope ──
                 setProgress(makeProgress('sealing-key', 65, 'Sealing encryption key…'));
@@ -165,12 +219,6 @@ export function useUpload(): UseUploadReturn {
 
                 // ── 6. Build & execute on-chain transaction ──
                 setProgress(makeProgress('publishing-tx', 80, 'Publishing on-chain…'));
-
-                const accountObjectId = deriveObjectID(
-                    platformObjectId,
-                    `${packageId}::account::AccountTag`,
-                    bcs.Address.serialize(account.address).toBytes(),
-                );
 
                 const priceMist = BigInt(
                     Math.round(parseFloat(params.price) * 1_000_000_000),

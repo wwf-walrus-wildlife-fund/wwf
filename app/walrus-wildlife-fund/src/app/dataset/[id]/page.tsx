@@ -32,11 +32,25 @@ export default function DatasetDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { dataset } = useDatasetDetail(id);
+  const { dataset, isLoading } = useDatasetDetail(id);
   const { hasBought, isChecking, recheck } = useUserItemCheck(id);
   const { buy, isBuying, error: buyError } = useBuy();
   const { decrypt, isDecrypting, decryptedData, error: decryptError } = useDecrypt();
   const [copied, setCopied] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center pt-16">
+          <div className="text-center">
+            <Loader2 className="w-6 h-6 text-[#a29bfe] animate-spin mx-auto mb-3" />
+            <p className="text-white/30">Loading dataset...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!dataset) {
     return (
@@ -81,7 +95,7 @@ export default function DatasetDetailPage({
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(dataset.seller);
+    navigator.clipboard.writeText(dataset.seller || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
