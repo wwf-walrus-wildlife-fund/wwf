@@ -82,7 +82,7 @@ export default function LandingPage() {
             }}
           />
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="relative max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
@@ -147,7 +147,7 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1, delay: 0.6 }}
-              className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto"
+              className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto"
             >
               {stats.map((stat) => (
                 <div key={stat.label} className="text-center">
@@ -171,7 +171,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features */}
-        <section className="relative py-32 px-4">
+        <section className="relative py-32 px-6 lg:px-10">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>
@@ -191,10 +191,10 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-6 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
+                  className="group p-8 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
                 >
                   <div
-                    className={`w-10 h-10 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 opacity-80 group-hover:opacity-100 transition-opacity`}
+                    className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 opacity-80 group-hover:opacity-100 transition-opacity`}
                   >
                     <feature.icon className="w-5 h-5 text-white" />
                   </div>
@@ -217,9 +217,9 @@ export default function LandingPage() {
         </section>
 
         {/* How it Works */}
-        <section className="relative py-24 px-4">
+        <section className="relative py-24 px-6 lg:px-10">
           <GlowOrb color="purple" size="400px" top="0" right="10%" opacity={0.06} />
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>
                 How it works
@@ -260,7 +260,7 @@ export default function LandingPage() {
         </section>
 
         {/* Trending Datasets */}
-        <section className="relative py-24 px-4">
+        <section className="relative py-24 px-6 lg:px-10">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-10">
               <div>
@@ -291,9 +291,9 @@ export default function LandingPage() {
         </section>
 
         {/* CTA */}
-        <section className="relative py-32 px-4">
+        <section className="relative py-32 px-6 lg:px-10">
           <GlowOrb color="purple" size="500px" top="-100px" left="30%" opacity={0.1} />
-          <div className="max-w-3xl mx-auto text-center relative">
+          <div className="max-w-4xl mx-auto text-center relative">
             <div
               className="p-12 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
               style={{ backdropFilter: "blur(10px)" }}

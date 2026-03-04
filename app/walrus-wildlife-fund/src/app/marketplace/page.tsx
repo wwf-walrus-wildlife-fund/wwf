@@ -26,7 +26,7 @@ export default function MarketplacePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="relative min-h-screen pt-24 pb-16 px-4">
+      <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="indigo" size="400px" top="0" right="-100px" opacity={0.06} />
 
         <div className="max-w-7xl mx-auto">

@@ -42,10 +42,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="relative min-h-screen pt-24 pb-16 px-4">
+      <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="cyan" size="400px" top="0" left="-100px" opacity={0.04} />
 
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

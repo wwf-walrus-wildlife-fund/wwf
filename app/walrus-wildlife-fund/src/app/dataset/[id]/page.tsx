@@ -73,10 +73,10 @@ export default function DatasetDetailPage({
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="relative min-h-screen pt-24 pb-16 px-4">
+      <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="indigo" size="400px" top="0" right="0" opacity={0.05} />
 
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Link
               href="/marketplace"

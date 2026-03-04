@@ -85,7 +85,7 @@ export default function UploadPage() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="relative min-h-screen flex items-center justify-center pt-16 px-4">
+        <div className="relative min-h-screen flex items-center justify-center pt-16 px-6 lg:px-10">
           <GlowOrb color="emerald" size="400px" top="30%" left="30%" opacity={0.08} />
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -134,10 +134,10 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="relative min-h-screen pt-24 pb-16 px-4">
+      <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="purple" size="400px" top="0" left="-100px" opacity={0.06} />
 
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
