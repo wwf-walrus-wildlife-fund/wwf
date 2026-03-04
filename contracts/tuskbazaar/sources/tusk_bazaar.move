@@ -1,48 +1,48 @@
 /// Module: tuskbazaar
-module tusk_bazaar::tusk_bazaar {
-    use std::string::String;
-    use sui::{package::{Self, Publisher}, vec_set};
-    use tusk_bazaar::dataset::{Self, Dataset};
+module tusk_bazaar::tusk_bazaar;
 
-    const EInvalidPublisher: u64 = 0;
+use std::string::String;
+use sui::{package::{Self, Publisher}, vec_set};
+use tusk_bazaar::dataset::{Self, Dataset};
 
-    public struct TUSK_BAZAAR() has drop;
+const EInvalidPublisher: u64 = 0;
 
-    public struct TuskBazaarNamespace has key {
-        id: UID,
-    }
+public struct TUSK_BAZAAR() has drop;
 
-    fun init(otw: TUSK_BAZAAR, ctx: &mut TxContext) {
-        package::claim_and_keep(otw, ctx);
-        transfer::share_object(TuskBazaarNamespace { id: object::new(ctx) });
-    }
+public struct TuskBazaarNamespace has key {
+    id: UID,
+}
 
-    // TODO: Use Minter object if time allows
-    public fun new_dataset(
-        self: &mut TuskBazaarNamespace,
-        publ: &Publisher,
-        der_key: String,
-        admins: vector<address>,
-        name: String,
-        description: String,
-        image_url: String,
-        project: String,
-        project_url: String,
-        envelope: vector<u8>,
-        blob_ids: vector<String>,
-    ): Dataset {
-        assert!(publ.from_package<TUSK_BAZAAR>(), EInvalidPublisher);
-        dataset::new_derived(
-            &mut self.id,
-            der_key,
-            vec_set::from_keys(admins),
-            name,
-            description,
-            image_url,
-            project,
-            project_url,
-            envelope,
-            vec_set::from_keys(blob_ids),
-        )
-    }
+fun init(otw: TUSK_BAZAAR, ctx: &mut TxContext) {
+    package::claim_and_keep(otw, ctx);
+    transfer::share_object(TuskBazaarNamespace { id: object::new(ctx) });
+}
+
+// TODO: Use Minter object if time allows
+public fun new_dataset(
+    self: &mut TuskBazaarNamespace,
+    publ: &Publisher,
+    der_key: String,
+    admins: vector<address>,
+    name: String,
+    description: String,
+    image_url: String,
+    project: String,
+    project_url: String,
+    envelope: vector<u8>,
+    blob_ids: vector<String>,
+): Dataset {
+    assert!(publ.from_package<TUSK_BAZAAR>(), EInvalidPublisher);
+    dataset::new_derived(
+        &mut self.id,
+        der_key,
+        vec_set::from_keys(admins),
+        name,
+        description,
+        image_url,
+        project,
+        project_url,
+        envelope,
+        vec_set::from_keys(blob_ids),
+    )
 }
