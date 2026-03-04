@@ -30,9 +30,9 @@ export function useBuy(): UseBuyReturn {
         throw new Error("No wallet connected");
       }
 
-      const packageId = process.env.PACKAGE_ID;
+      const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
       if (!packageId) {
-        throw new Error("Missing PACKAGE_ID");
+        throw new Error("Missing NEXT_PUBLIC_PACKAGE_ID");
       }
 
       const datasetObject = await (client as any).getObject({

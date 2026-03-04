@@ -31,7 +31,8 @@ const statColors: Record<string, string> = {
 };
 
 export default function DashboardPage() {
-  const { publishedDatasets, purchasedDatasets, stats } = useDashboard();
+  const { publishedDatasets, purchasedDatasets, stats, isLoading, error } =
+    useDashboard();
   const [activeTab, setActiveTab] = useState<"published" | "purchased">(
     "published",
   );
@@ -229,71 +230,111 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {activeDatasets.map((d, i) => (
-                      <motion.tr
-                        key={d.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group"
-                      >
-                        <td className="px-6 py-4">
-                          <p
-                            className="text-white/70 group-hover:text-white transition-colors"
-                            style={{ fontSize: "0.9rem" }}
-                          >
-                            {d.name}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 hidden sm:table-cell">
-                          <span
-                            className="px-2 py-0.5 rounded bg-white/[0.04] text-white/25"
-                            style={{ fontSize: "0.7rem" }}
-                          >
-                            {d.category}
-                          </span>
-                        </td>
+                    {isLoading && (
+                      <tr>
                         <td
-                          className="px-6 py-4 hidden md:table-cell text-white/30"
-                          style={{ fontSize: "0.85rem" }}
+                          colSpan={6}
+                          className="px-6 py-8 text-center text-white/40"
+                          style={{ fontSize: "0.9rem" }}
                         >
-                          {d.size}
+                          Loading your datasets...
                         </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className="text-[#C4B5FD]"
-                            style={{ fontSize: "0.9rem" }}
+                      </tr>
+                    )}
+
+                    {!isLoading && error && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-6 py-8 text-center text-rose-300/80"
+                          style={{ fontSize: "0.9rem" }}
+                        >
+                          {error}
+                        </td>
+                      </tr>
+                    )}
+
+                    {!isLoading && !error && activeDatasets.length === 0 && (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="px-6 py-8 text-center text-white/35"
+                          style={{ fontSize: "0.9rem" }}
+                        >
+                          {activeTab === "published"
+                            ? "You don't own any dataset yet."
+                            : "You haven't purchased any dataset yet."}
+                        </td>
+                      </tr>
+                    )}
+
+                    {!isLoading &&
+                      !error &&
+                      activeDatasets.map((d, i) => (
+                        <motion.tr
+                          key={d.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                          className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors group"
+                        >
+                          <td className="px-6 py-4">
+                            <p
+                              className="text-white/70 group-hover:text-white transition-colors"
+                              style={{ fontSize: "0.9rem" }}
+                            >
+                              {d.name}
+                            </p>
+                          </td>
+                          <td className="px-6 py-4 hidden sm:table-cell">
+                            <span
+                              className="px-2 py-0.5 rounded bg-white/[0.04] text-white/25"
+                              style={{ fontSize: "0.7rem" }}
+                            >
+                              {d.category}
+                            </span>
+                          </td>
+                          <td
+                            className="px-6 py-4 hidden md:table-cell text-white/30"
+                            style={{ fontSize: "0.85rem" }}
                           >
-                            {activeTab === "published"
-                              ? `${(parseInt(d.id) * 73 + 50) % 250 + 50}`
-                              : d.price}
-                          </span>
-                          <span
-                            className="text-white/15 ml-1"
-                            style={{ fontSize: "0.7rem" }}
-                          >
-                            SUI
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 hidden lg:table-cell">
-                          <span
-                            className="flex items-center gap-1 text-white/20"
-                            style={{ fontSize: "0.8rem" }}
-                          >
-                            <Clock className="w-3 h-3" /> {d.expiresIn}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <button className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
-                            {activeTab === "published" ? (
-                              <Eye className="w-4 h-4" />
-                            ) : (
-                              <ExternalLink className="w-4 h-4" />
-                            )}
-                          </button>
-                        </td>
-                      </motion.tr>
-                    ))}
+                            {d.size}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className="text-[#C4B5FD]"
+                              style={{ fontSize: "0.9rem" }}
+                            >
+                              {activeTab === "published"
+                                ? `${(parseInt(d.id, 16) * 73 + 50) % 250 + 50}`
+                                : d.price}
+                            </span>
+                            <span
+                              className="text-white/15 ml-1"
+                              style={{ fontSize: "0.7rem" }}
+                            >
+                              SUI
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 hidden lg:table-cell">
+                            <span
+                              className="flex items-center gap-1 text-white/20"
+                              style={{ fontSize: "0.8rem" }}
+                            >
+                              <Clock className="w-3 h-3" /> {d.expiresIn}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <button className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
+                              {activeTab === "published" ? (
+                                <Eye className="w-4 h-4" />
+                              ) : (
+                                <ExternalLink className="w-4 h-4" />
+                              )}
+                            </button>
+                          </td>
+                        </motion.tr>
+                      ))}
                   </tbody>
                 </table>
               </div>

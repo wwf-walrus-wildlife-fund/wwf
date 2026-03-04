@@ -5,7 +5,7 @@ export const canRead = async (
   account: string,
   suiClient: AnySuiClient,
 ): Promise<boolean> => {
-  const packageId = process.env.PACKAGE_ID;
+  const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID;
   if (!packageId) return false;
 
   try {
