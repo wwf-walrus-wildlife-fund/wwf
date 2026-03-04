@@ -35,7 +35,7 @@ export interface NewDerivedArguments {
     project: RawTransactionArgument<string>;
     projectUrl: RawTransactionArgument<string>;
     envelope: RawTransactionArgument<number[]>;
-    blobIds: RawTransactionArgument<string>;
+    blobIds: RawTransactionArgument<string[]>;
     priceSui: RawTransactionArgument<number | bigint>;
     fundsReceiver: RawTransactionArgument<string>;
 }
@@ -50,7 +50,7 @@ export interface NewDerivedOptions {
         project: RawTransactionArgument<string>,
         projectUrl: RawTransactionArgument<string>,
         envelope: RawTransactionArgument<number[]>,
-        blobIds: RawTransactionArgument<string>,
+        blobIds: RawTransactionArgument<string[]>,
         priceSui: RawTransactionArgument<number | bigint>,
         fundsReceiver: RawTransactionArgument<string>
     ];
@@ -66,7 +66,7 @@ export function newDerived(options: NewDerivedOptions) {
         '0x1::string::String',
         '0x1::string::String',
         'vector<u8>',
-        null,
+        'vector<0x1::string::String>',
         'u64',
         'address'
     ] satisfies (string | null)[];
