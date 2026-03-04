@@ -7,9 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "codegen": "sui-ts-codegen generate"
   },
   "dependencies": {
+    "@mysten/codegen": "^0.8.2",
     "@mysten/dapp-kit-react": "^1.0.1",
     "@mysten/enoki": "^1.0.4",
     "@mysten/seal": "^1.1.0",
