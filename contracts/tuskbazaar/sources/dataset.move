@@ -1,7 +1,7 @@
 module tusk_bazaar::dataset;
 
 use std::string::String;
-use sui::{coin::Coin, derived_object, dynamic_field as df, sui::SUI, vec_set::VecSet};
+use sui::{coin::Coin, derived_object, dynamic_field as df, sui::SUI, vec_set::{Self, VecSet}};
 use tusk_bazaar::{account::Account, tusk_bazaar::TuskBazaarNamespace};
 
 use fun df::add as UID.df_add;
@@ -44,7 +44,7 @@ public fun new_derived(
     project: String,
     project_url: String,
     envelope: vector<u8>,
-    blob_ids: VecSet<String>,
+    blob_ids: vector<String>,
     price_sui: u64,
     funds_receiver: address,
     ctx: &TxContext,
@@ -68,7 +68,7 @@ public fun new_derived(
         incr_index,
         derivation_id,
         envelope: Envelope { encrypted_key: envelope, version: 0 },
-        blob_ids,
+        blob_ids: vec_set::from_keys(blob_ids),
         price_sui,
         funds_receiver,
     }
