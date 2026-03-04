@@ -35,16 +35,16 @@ export function useBuy(): UseBuyReturn {
         throw new Error("Missing NEXT_PUBLIC_PACKAGE_ID");
       }
 
-      const datasetObject = await (client as any).getObject({
-        id: datasetId,
-        options: { showContent: true },
+      const datasetObject = await client.getObject({
+        objectId: datasetId,
+        include: { json: true },
       });
-      const fields = datasetObject?.data?.content?.fields;
+      const fields = datasetObject.object.json;
       if (!fields) {
-        throw new Error("Dataset object not found");
+        throw new Error(`Dataset object not found: ${datasetId}`);
       }
 
-      const priceMist = BigInt(fields.price_sui);
+      const priceMist = BigInt(fields!.price_sui as string);
       const namespaceId = fields.derivation_id as string;
       if (!namespaceId) {
         throw new Error("Dataset derivation namespace is missing");
@@ -55,63 +55,32 @@ export function useBuy(): UseBuyReturn {
         `${packageId}::account::AccountTag`,
         bcs.Address.serialize(currentAccount.address).toBytes(),
       );
-
-      const { data: coins } = await (client as any).getCoins({
-        owner: currentAccount.address,
-        coinType: "0x2::sui::SUI",
-      });
-      if (!coins?.length) {
-        throw new Error("You have no SUI coins. Please fund your wallet.");
-      }
-
-      const totalBalance = coins.reduce(
-        (sum: bigint, coin: { balance: string }) => sum + BigInt(coin.balance),
-        0n,
+      const accountObject = await client.getObject({
+        objectId: accountId,
+        include: { json: true },
+      }).catch(
+        () => null,
       );
-      if (totalBalance < priceMist) {
-        const needed = (Number(priceMist) / 1_000_000_000).toFixed(2);
-        const available = (Number(totalBalance) / 1_000_000_000).toFixed(2);
-        throw new Error(
-          `Insufficient SUI balance. Need ${needed} SUI but only have ${available} SUI.`,
-        );
+      const accountExists = Boolean(accountObject?.object?.json);
+      if (!accountExists) {
+        const setupTx = new Transaction();
+        const newAccount = setupTx.moveCall({
+          target: `${packageId}::account::new`,
+          arguments: [setupTx.object(namespaceId)],
+        });
+        setupTx.moveCall({
+          target: `${packageId}::account::share`,
+          arguments: [newAccount],
+        });
+        await signAndExecuteTransaction({
+          transaction: setupTx,
+        });
       }
-
-      const singleCoin = coins.find(
-        (coin: { balance: string }) => BigInt(coin.balance) >= priceMist,
-      );
-      const selectedCoins = singleCoin
-        ? [singleCoin]
-        : (() => {
-            const picked = [];
-            let running = 0n;
-            for (const coin of coins) {
-              picked.push(coin);
-              running += BigInt(coin.balance);
-              if (running >= priceMist) break;
-            }
-            return picked;
-          })();
 
       const tx = new Transaction();
-      const paymentAmount = tx.pure.u64(priceMist);
-      let paymentCoin;
-
-      if (selectedCoins.length === 1) {
-        const onlyCoin = selectedCoins[0];
-        const onlyCoinInput = tx.object(onlyCoin.coinObjectId);
-        if (BigInt(onlyCoin.balance) === priceMist) {
-          paymentCoin = onlyCoinInput;
-        } else {
-          paymentCoin = tx.splitCoins(onlyCoinInput, [paymentAmount])[0];
-        }
-      } else {
-        const primaryInput = tx.object(selectedCoins[0].coinObjectId);
-        const restInputs = selectedCoins
-          .slice(1)
-          .map((coin: { coinObjectId: string }) => tx.object(coin.coinObjectId));
-        tx.mergeCoins(primaryInput, restInputs);
-        paymentCoin = tx.splitCoins(primaryInput, [paymentAmount])[0];
-      }
+      const amount = tx.pure.u64(priceMist);
+      const SUI_TYPE_ARG = tx.gas;
+      const [paymentCoin] = tx.splitCoins(SUI_TYPE_ARG, [amount]);
 
       tx.moveCall({
         target: `${packageId}::dataset::pay_sui_to_read`,

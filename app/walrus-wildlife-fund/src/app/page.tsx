@@ -13,7 +13,7 @@ import { useStats } from "@/hooks/useStats";
 const features = [
   {
     icon: Shield,
-    title: "zkLogin on Sui",
+    title: "zkLogin on Sui ",
     description:
       "Authenticate with Google, Apple, or Twitch. No wallet setup, no seed phrases.",
     gradient: "from-[#6C5CE7] to-[#A29BFE]",
