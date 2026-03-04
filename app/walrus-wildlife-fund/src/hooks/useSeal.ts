@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { SealClient, SessionKey } from '@mysten/seal';
 import { useCurrentAccount, useCurrentClient, useDAppKit } from '@mysten/dapp-kit-react';
+import { normalizeSuiAddress } from '@mysten/sui/utils';
 import {
     getSealClient,
     encryptContent,
@@ -49,15 +50,16 @@ export function useSessionKey(ttlMin: number = 10): UseSessionKeyResult {
         setError(null);
 
         try {
+            const normalizedAddress = normalizeSuiAddress(currentAccount.address);
             const sk = await createSessionKey(
-                currentAccount.address,
+                normalizedAddress,
                 client,
                 ttlMin
             );
 
             const message = sk.getPersonalMessage();
             const { signature } = await signPersonalMessage({ message });
-            sk.setPersonalMessageSignature(signature);
+            await sk.setPersonalMessageSignature(signature);
 
             setSessionKey(sk);
             return sk;

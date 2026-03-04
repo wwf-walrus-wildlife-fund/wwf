@@ -1,11 +1,24 @@
 import { SealClient, SessionKey } from "@mysten/seal";
 import { Transaction } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
+import { getJsonRpcFullnodeUrl, SuiJsonRpcClient } from "@mysten/sui/jsonRpc";
 
-const SEAL_KEY_SERVER_OBJECT_IDS = [
-    "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75",
-    "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
+const DEFAULT_SEAL_KEY_SERVER_OBJECT_IDS = [
+    // Overclock (open, testnet)
+    "0x9c949e53c36ab7a9c484ed9e8b43267a77d4b8d70e79aa6b39042e3d4c434105",
+    // H2O Nodes (open, testnet)
+    "0x39cef09b24b667bc6ed54f7159d82352fe2d5dd97ca9a5beaa1d21aa774f25a2",
 ];
+
+function getSealKeyServerObjectIds(): string[] {
+    const fromEnv = process.env.NEXT_PUBLIC_SEAL_KEY_SERVER_OBJECT_IDS;
+    if (!fromEnv) return DEFAULT_SEAL_KEY_SERVER_OBJECT_IDS;
+    const parsed = fromEnv
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean);
+    return parsed.length > 0 ? parsed : DEFAULT_SEAL_KEY_SERVER_OBJECT_IDS;
+}
 export const SEAL_THRESHOLD = 1;
 
 // ============================================================
@@ -43,11 +56,25 @@ let sealClientInstance: SealClient | null = null;
  */
 export function getSealClient(suiClient: AnySuiClient): SealClient {
     if (!sealClientInstance) {
+        const keyServerObjectIds = getSealKeyServerObjectIds();
+        const sealApiKey = process.env.NEXT_PUBLIC_SEAL_API_KEY;
+        const sealApiKeyName = process.env.NEXT_PUBLIC_SEAL_API_KEY_NAME ?? "x-api-key";
+        const authConfig = sealApiKey
+            ? { apiKeyName: sealApiKeyName, apiKey: sealApiKey }
+            : {};
+
+        console.info("[seal] initializing client", {
+            keyServers: keyServerObjectIds,
+            hasApiKey: Boolean(sealApiKey),
+            apiKeyName: sealApiKey ? sealApiKeyName : null,
+        });
+
         sealClientInstance = new SealClient({
             suiClient,
-            serverConfigs: SEAL_KEY_SERVER_OBJECT_IDS.map((id) => ({
+            serverConfigs: keyServerObjectIds.map((id) => ({
                 objectId: id,
                 weight: 1,
+                ...authConfig,
             })),
             verifyKeyServers: false,
         });
@@ -113,14 +140,20 @@ export async function encryptContent(
  */
 export async function createSessionKey(
     suiAddress: string,
-    suiClient: AnySuiClient,
+    _suiClient: AnySuiClient,
     ttlMin: number = 10
 ): Promise<SessionKey> {
+    // SessionKey signature verification is JSON-RPC based.
+    // Use SuiJsonRpcClient here to avoid transport-specific verification failures.
+    const sessionClient = new SuiJsonRpcClient({
+        url: getJsonRpcFullnodeUrl("testnet"),
+        network: "testnet",
+    });
     const sessionKey = await SessionKey.create({
         address: suiAddress,
         packageId: process.env.NEXT_PUBLIC_PACKAGE_ID!,
         ttlMin,
-        suiClient,
+        suiClient: sessionClient,
     });
 
     return sessionKey;
