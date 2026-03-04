@@ -9,16 +9,20 @@ import {
   Database,
   Users,
   Shield,
-  ExternalLink,
   Copy,
   CheckCircle2,
   Loader2,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useDatasetDetail } from "@/hooks/useDatasetDetail";
+import { useUserItemCheck } from "@/hooks/useUserItemCheck";
+import { useBuy } from "@/hooks/useBuy";
+import { useDecrypt } from "@/hooks/useDecrypt";
 
 export default function DatasetDetailPage({
   params,
@@ -27,11 +31,10 @@ export default function DatasetDetailPage({
 }) {
   const { id } = use(params);
   const { dataset } = useDatasetDetail(id);
-  const [buying, setBuying] = useState(false);
-  const [bought, setBought] = useState(false);
+  const { hasBought, isChecking, recheck } = useUserItemCheck(id);
+  const { buy, isBuying, error: buyError } = useBuy();
+  const { decrypt, isDecrypting, decryptedData, error: decryptError } = useDecrypt();
   const [copied, setCopied] = useState(false);
-  const [mode, setMode] = useState<"buy" | "rent">("buy");
-  const [rentDays, setRentDays] = useState(7);
 
   if (!dataset) {
     return (
@@ -53,22 +56,30 @@ export default function DatasetDetailPage({
     );
   }
 
-  const handleBuy = () => {
-    setBuying(true);
-    setTimeout(() => {
-      setBuying(false);
-      setBought(true);
-    }, 2000);
+  const handleBuy = async () => {
+    const success = await buy(id);
+    if (success) recheck();
+  };
+
+  const handleDecrypt = () => {
+    decrypt(id);
+  };
+
+  const handleDownload = () => {
+    if (!decryptedData) return;
+    const url = URL.createObjectURL(decryptedData);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${dataset.name.replace(/\s+/g, "_")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleCopy = () => {
+    navigator.clipboard.writeText(dataset.seller);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const totalRentCost = dataset.rentPrice
-    ? (parseFloat(dataset.rentPrice) * rentDays).toFixed(1)
-    : "0";
 
   return (
     <div className="min-h-screen bg-background">
@@ -122,18 +133,6 @@ export default function DatasetDetailPage({
                   >
                     {dataset.description}
                   </p>
-
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {dataset.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-3 py-1 rounded-lg bg-white/[0.04] text-white/30 border border-white/[0.05]"
-                        style={{ fontSize: "0.75rem" }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
@@ -219,152 +218,130 @@ export default function DatasetDetailPage({
                 </div>
               </div>
 
-              {/* Sidebar - Purchase */}
+              {/* Sidebar - Purchase / Decrypt */}
               <div className="space-y-4">
                 <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02] sticky top-24">
-                  <div className="flex rounded-lg bg-white/[0.03] border border-white/[0.06] p-1 mb-6">
-                    <button
-                      onClick={() => setMode("buy")}
-                      className={`flex-1 py-2 rounded-md transition-all ${
-                        mode === "buy"
-                          ? "bg-[#4834D4]/15 text-[#C4B5FD]"
-                          : "text-white/30"
-                      }`}
-                      style={{ fontSize: "0.85rem" }}
-                    >
-                      Buy
-                    </button>
-                    {dataset.rentPrice && (
-                      <button
-                        onClick={() => setMode("rent")}
-                        className={`flex-1 py-2 rounded-md transition-all ${
-                          mode === "rent"
-                            ? "bg-[#4834D4]/15 text-[#C4B5FD]"
-                            : "text-white/30"
-                        }`}
-                        style={{ fontSize: "0.85rem" }}
-                      >
-                        Rent
-                      </button>
-                    )}
-                  </div>
-
-                  {mode === "buy" ? (
-                    <div className="text-center mb-6">
-                      <p
-                        className="text-white/20 mb-1"
-                        style={{
-                          fontSize: "0.75rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        Price
+                  {isChecking ? (
+                    <div className="flex flex-col items-center py-8">
+                      <Loader2 className="w-6 h-6 text-[#a29bfe] animate-spin mb-3" />
+                      <p className="text-white/30" style={{ fontSize: "0.85rem" }}>
+                        Checking ownership...
                       </p>
-                      <div className="flex items-baseline justify-center gap-1">
-                        <span
-                          className="text-white"
-                          style={{ fontSize: "2.5rem" }}
-                        >
-                          {dataset.price}
-                        </span>
-                        <span className="text-white/30">SUI</span>
-                      </div>
                     </div>
-                  ) : (
-                    <div className="mb-6">
-                      <p
-                        className="text-white/20 mb-3 text-center"
-                        style={{
-                          fontSize: "0.75rem",
-                          textTransform: "uppercase",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        Rental Period
-                      </p>
-                      <input
-                        type="range"
-                        min={1}
-                        max={30}
-                        value={rentDays}
-                        onChange={(e) => setRentDays(Number(e.target.value))}
-                        className="w-full accent-[#6C5CE7] mb-2"
-                      />
-                      <div
-                        className="flex justify-between text-white/20 mb-4"
-                        style={{ fontSize: "0.7rem" }}
-                      >
-                        <span>1 day</span>
-                        <span className="text-[#C4B5FD]">{rentDays} days</span>
-                        <span>30 days</span>
-                      </div>
-                      <div className="text-center">
-                        <div className="flex items-baseline justify-center gap-1">
-                          <span
-                            className="text-white"
-                            style={{ fontSize: "2rem" }}
-                          >
-                            {totalRentCost}
-                          </span>
-                          <span className="text-white/30">SUI</span>
-                        </div>
-                        <p
-                          className="text-white/15"
-                          style={{ fontSize: "0.7rem" }}
-                        >
-                          {dataset.rentPrice} SUI/day &times; {rentDays} days
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {bought ? (
-                    <div className="space-y-3">
+                  ) : hasBought ? (
+                    /* Decrypt flow — user owns this dataset */
+                    <div className="space-y-4">
                       <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center">
                         <CheckCircle2 className="w-6 h-6 text-emerald-400 mx-auto mb-2" />
                         <p
                           className="text-emerald-300"
                           style={{ fontSize: "0.85rem" }}
                         >
-                          Access Granted
-                        </p>
-                        <p
-                          className="text-white/20 mt-1"
-                          style={{ fontSize: "0.7rem" }}
-                        >
-                          Sponsored &middot; 0 gas
+                          You own this dataset
                         </p>
                       </div>
-                      <button className="w-full py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] transition-all flex items-center justify-center gap-2">
-                        <ExternalLink className="w-4 h-4" /> Download Data
-                      </button>
+
+                      {decryptedData ? (
+                        <button
+                          onClick={handleDownload}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10"
+                        >
+                          <Download className="w-4 h-4" /> Download Data
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleDecrypt}
+                          disabled={isDecrypting}
+                          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#4834D4]/20 disabled:opacity-50"
+                        >
+                          {isDecrypting ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Decrypting via Seal...
+                            </>
+                          ) : (
+                            <>
+                              <Unlock className="w-4 h-4" />
+                              Decrypt with Seal
+                            </>
+                          )}
+                        </button>
+                      )}
+
+                      {decryptError && (
+                        <p className="text-red-400 text-center" style={{ fontSize: "0.8rem" }}>
+                          {decryptError}
+                        </p>
+                      )}
+
+                      <p
+                        className="text-center text-white/10"
+                        style={{ fontSize: "0.7rem" }}
+                      >
+                        Data is decrypted locally using Seal
+                      </p>
                     </div>
                   ) : (
-                    <button
-                      onClick={handleBuy}
-                      disabled={buying}
-                      className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {buying ? (
-                        <>
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          Processing...
-                        </>
-                      ) : mode === "buy" ? (
-                        `Buy for ${dataset.price} SUI`
-                      ) : (
-                        `Rent for ${totalRentCost} SUI`
-                      )}
-                    </button>
-                  )}
+                    /* Buy flow — user hasn't purchased yet */
+                    <div>
+                      <div className="flex items-center gap-2 justify-center mb-4">
+                        <Lock className="w-4 h-4 text-white/20" />
+                        <p className="text-white/30" style={{ fontSize: "0.8rem" }}>
+                          Encrypted on Walrus
+                        </p>
+                      </div>
 
-                  <p
-                    className="text-center text-white/10 mt-3"
-                    style={{ fontSize: "0.7rem" }}
-                  >
-                    Sponsored transaction &middot; No gas fees
-                  </p>
+                      <div className="text-center mb-6">
+                        <p
+                          className="text-white/20 mb-1"
+                          style={{
+                            fontSize: "0.75rem",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          Price
+                        </p>
+                        <div className="flex items-baseline justify-center gap-1">
+                          <span
+                            className="text-white"
+                            style={{ fontSize: "2.5rem" }}
+                          >
+                            {dataset.price}
+                          </span>
+                          <span className="text-white/30">SUI</span>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleBuy}
+                        disabled={isBuying}
+                        className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isBuying ? (
+                          <>
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          `Buy for ${dataset.price} SUI`
+                        )}
+                      </button>
+
+                      {buyError && (
+                        <p className="text-red-400 text-center mt-3" style={{ fontSize: "0.8rem" }}>
+                          {buyError}
+                        </p>
+                      )}
+
+                      <p
+                        className="text-center text-white/10 mt-3"
+                        style={{ fontSize: "0.7rem" }}
+                      >
+                        Sponsored transaction &middot; No gas fees
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

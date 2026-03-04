@@ -55,7 +55,7 @@ const howItWorks = [
   {
     step: "03",
     title: "Transact",
-    desc: "Buy or rent data instantly. All transactions are gasless and sponsored on your behalf.",
+    desc: "Buy data instantly. All transactions are gasless and sponsored on your behalf.",
   },
 ];
 
@@ -117,7 +117,7 @@ export default function LandingPage() {
               className="text-white/35 max-w-xl mx-auto mb-10"
               style={{ fontSize: "1.05rem", lineHeight: "1.7" }}
             >
-              Upload, monetize, buy, or rent data. Built for humans, AI agents,
+              Upload, monetize, and buy data. Built for humans, AI agents,
               and LLMs. Seamless on-chain transactions with zero friction.
             </motion.p>
 

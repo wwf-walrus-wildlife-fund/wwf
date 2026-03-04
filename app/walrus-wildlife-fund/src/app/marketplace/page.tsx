@@ -39,7 +39,7 @@ export default function MarketplacePage() {
               Marketplace
             </h1>
             <p className="text-white/30">
-              Browse, buy, or rent data from verified providers.
+              Browse and buy data from verified providers.
             </p>
           </motion.div>
 

@@ -16,12 +16,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-
-interface UploadedFile {
-  name: string;
-  size: number;
-  type: string;
-}
+import { useUpload } from "@/hooks/useUpload";
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return bytes + " B";
@@ -32,56 +27,39 @@ function formatSize(bytes: number) {
 }
 
 export default function UploadPage() {
-  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [storageDays, setStorageDays] = useState(90);
   const [price, setPrice] = useState("10");
-  const [rentEnabled, setRentEnabled] = useState(false);
-  const [rentPrice, setRentPrice] = useState("1");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("AI Training");
-  const [tags, setTags] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [success, setSuccess] = useState(false);
+
+  const { upload, isUploading, isSuccess, error, reset } = useUpload();
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const droppedFiles = Array.from(e.dataTransfer.files).map((f) => ({
-      name: f.name,
-      size: f.size,
-      type: f.type || "unknown",
-    }));
-    setFiles((prev) => [...prev, ...droppedFiles]);
+    const dropped = e.dataTransfer.files[0];
+    if (dropped) setFile(dropped);
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selected = Array.from(e.target.files).map((f) => ({
-        name: f.name,
-        size: f.size,
-        type: f.type || "unknown",
-      }));
-      setFiles((prev) => [...prev, ...selected]);
+    if (e.target.files?.[0]) {
+      setFile(e.target.files[0]);
     }
   };
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  const removeFile = () => setFile(null);
 
   const storageCost = ((storageDays / 30) * 0.5).toFixed(2);
 
   const handleSubmit = () => {
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      setSuccess(true);
-    }, 2500);
+    if (!file || !name) return;
+    upload({ file, name, description, category, price, storageDays });
   };
 
-  if (success) {
+  if (isSuccess) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -108,11 +86,10 @@ export default function UploadPage() {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => {
-                  setSuccess(false);
-                  setFiles([]);
+                  reset();
+                  setFile(null);
                   setName("");
                   setDescription("");
-                  setTags("");
                 }}
                 className="px-6 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
               >
@@ -175,7 +152,6 @@ export default function UploadPage() {
                 <input
                   id="file-input"
                   type="file"
-                  multiple
                   className="hidden"
                   onChange={handleFileSelect}
                 />
@@ -185,7 +161,7 @@ export default function UploadPage() {
                   }`}
                 />
                 <p className="text-white/40 mb-1">
-                  Drop files here or{" "}
+                  Drop a file here or{" "}
                   <span className="text-[#a29bfe] cursor-pointer">browse</span>
                 </p>
                 <p className="text-white/15" style={{ fontSize: "0.75rem" }}>
@@ -194,46 +170,38 @@ export default function UploadPage() {
               </div>
             </motion.div>
 
-            {/* File list */}
+            {/* File */}
             <AnimatePresence>
-              {files.length > 0 && (
+              {file && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="space-y-2 overflow-hidden"
+                  className="overflow-hidden"
                 >
-                  {files.map((file, i) => (
-                    <motion.div
-                      key={`${file.name}-${i}`}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]"
-                    >
-                      <FileText className="w-4 h-4 text-indigo-400/60 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="text-white/70 truncate"
-                          style={{ fontSize: "0.85rem" }}
-                        >
-                          {file.name}
-                        </p>
-                        <p
-                          className="text-white/20"
-                          style={{ fontSize: "0.7rem" }}
-                        >
-                          {formatSize(file.size)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeFile(i)}
-                        className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/5 transition-all"
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                    <FileText className="w-4 h-4 text-indigo-400/60 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-white/70 truncate"
+                        style={{ fontSize: "0.85rem" }}
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </motion.div>
-                  ))}
+                        {file.name}
+                      </p>
+                      <p
+                        className="text-white/20"
+                        style={{ fontSize: "0.7rem" }}
+                      >
+                        {formatSize(file.size)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={removeFile}
+                      className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/5 transition-all"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -279,48 +247,31 @@ export default function UploadPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className="block text-white/30 mb-1.5"
-                    style={{ fontSize: "0.8rem" }}
-                  >
-                    Category
-                  </label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/60 focus:outline-none focus:border-[#6C5CE7]/30 transition-all appearance-none cursor-pointer"
-                  >
-                    {[
-                      "AI Training",
-                      "Financial",
-                      "Healthcare",
-                      "Geospatial",
-                      "Social",
-                      "IoT",
-                    ].map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    className="block text-white/30 mb-1.5"
-                    style={{ fontSize: "0.8rem" }}
-                  >
-                    Tags
-                  </label>
-                  <input
-                    type="text"
-                    value={tags}
-                    onChange={(e) => setTags(e.target.value)}
-                    placeholder="e.g., NLP, Code, Multi-task"
-                    className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/15 focus:outline-none focus:border-[#6C5CE7]/30 transition-all"
-                  />
-                </div>
+              <div>
+                <label
+                  className="block text-white/30 mb-1.5"
+                  style={{ fontSize: "0.8rem" }}
+                >
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/60 focus:outline-none focus:border-[#6C5CE7]/30 transition-all appearance-none cursor-pointer"
+                >
+                  {[
+                    "AI Training",
+                    "Financial",
+                    "Healthcare",
+                    "Geospatial",
+                    "Social",
+                    "IoT",
+                  ].map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
               </div>
             </motion.div>
 
@@ -392,69 +343,30 @@ export default function UploadPage() {
                 <h3 className="text-white/80">Pricing</h3>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label
-                    className="block text-white/30 mb-1.5"
-                    style={{ fontSize: "0.8rem" }}
-                  >
-                    Buy Price (SUI)
-                  </label>
-                  <input
-                    type="number"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C5CE7]/30 transition-all"
-                    min="0"
-                    step="0.1"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setRentEnabled(!rentEnabled)}
-                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
-                      rentEnabled ? "bg-[#6C5CE7]" : "bg-white/10"
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform duration-200 ${
-                        rentEnabled ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                  <span
-                    className="text-white/50"
-                    style={{ fontSize: "0.85rem" }}
-                  >
-                    Enable rental pricing
-                  </span>
-                </div>
-
-                {rentEnabled && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                  >
-                    <label
-                      className="block text-white/30 mb-1.5"
-                      style={{ fontSize: "0.8rem" }}
-                    >
-                      Rent Price (SUI/day)
-                    </label>
-                    <input
-                      type="number"
-                      value={rentPrice}
-                      onChange={(e) => setRentPrice(e.target.value)}
-                      className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C5CE7]/30 transition-all"
-                      min="0"
-                      step="0.01"
-                    />
-                  </motion.div>
-                )}
+              <div>
+                <label
+                  className="block text-white/30 mb-1.5"
+                  style={{ fontSize: "0.8rem" }}
+                >
+                  Buy Price (SUI)
+                </label>
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-[#6C5CE7]/30 transition-all"
+                  min="0"
+                  step="0.1"
+                />
               </div>
             </motion.div>
+
+            {/* Error */}
+            {error && (
+              <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 text-red-300" style={{ fontSize: "0.85rem" }}>
+                {error}
+              </div>
+            )}
 
             {/* Submit */}
             <motion.div
@@ -464,10 +376,10 @@ export default function UploadPage() {
             >
               <button
                 onClick={handleSubmit}
-                disabled={files.length === 0 || !name || uploading}
+                disabled={!file || !name || isUploading}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {uploading ? (
+                {isUploading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Encrypting & Uploading to Walrus...

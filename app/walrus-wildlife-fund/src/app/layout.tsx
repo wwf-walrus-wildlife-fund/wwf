@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "TuskBazaar — Data Marketplace on Sui",
   description:
-    "Upload, monetize, buy, or rent data. Built for humans, AI agents, and LLMs. Seamless on-chain transactions with zero friction.",
+    "Upload, monetize, and buy data. Built for humans, AI agents, and LLMs. Seamless on-chain transactions with zero friction.",
 };
 
 export default function RootLayout({

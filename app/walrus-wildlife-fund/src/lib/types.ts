@@ -4,17 +4,24 @@ export interface Dataset {
   description: string;
   category: string;
   price: string;
-  rentPrice?: string;
   size: string;
   format: string;
   downloads: number;
   expiresIn: string;
   seller: string;
   verified: boolean;
-  tags: string[];
 }
 
 export interface Stat {
   label: string;
   value: string;
+}
+
+export interface UploadPayload {
+  file: File;
+  name: string;
+  description: string;
+  category: string;
+  price: string;
+  storageDays: number;
 }

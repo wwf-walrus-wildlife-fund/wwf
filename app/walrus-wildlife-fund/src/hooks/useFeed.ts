@@ -29,8 +29,7 @@ export function useFeed() {
     return allDatasets.filter((d) => {
       const matchSearch =
         d.name.toLowerCase().includes(search.toLowerCase()) ||
-        d.description.toLowerCase().includes(search.toLowerCase()) ||
-        d.tags.some((t) => t.toLowerCase().includes(search.toLowerCase()));
+        d.description.toLowerCase().includes(search.toLowerCase());
       const matchCategory =
         activeCategory === "All" || d.category === activeCategory;
       return matchSearch && matchCategory;

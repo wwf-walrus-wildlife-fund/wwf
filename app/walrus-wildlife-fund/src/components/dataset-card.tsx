@@ -46,18 +46,6 @@ export function DatasetCard({ dataset }: { dataset: Dataset }) {
           {dataset.description}
         </p>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          {dataset.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="px-2.5 py-1 rounded bg-white/[0.04] text-white/30 border border-white/[0.04]"
-              style={{ fontSize: "0.78rem" }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
         <div
           className="flex items-center gap-4 mb-4 text-white/25"
           style={{ fontSize: "0.85rem" }}
@@ -81,14 +69,6 @@ export function DatasetCard({ dataset }: { dataset: Dataset }) {
             <span className="text-white/20 ml-1" style={{ fontSize: "0.85rem" }}>
               SUI
             </span>
-            {dataset.rentPrice && (
-              <span
-                className="text-white/20 ml-3"
-                style={{ fontSize: "0.85rem" }}
-              >
-                or {dataset.rentPrice} SUI/day
-              </span>
-            )}
           </div>
           {dataset.verified && (
             <div
