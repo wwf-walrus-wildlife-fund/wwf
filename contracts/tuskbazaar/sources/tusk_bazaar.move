@@ -11,6 +11,23 @@ public struct TUSK_BAZAAR() has drop;
 
 public struct TuskBazaarNamespace has key {
     id: UID,
+    global_counter: u64
+}
+
+// derived by Namespace + address
+public struct AccountCap has key {
+    id: UID,
+    datasets_ids: vector<ID>,
+}
+
+// @mysten/codegen
+
+public fun new_dataset(account_cap, global_app_data) {
+    package-id + counter -> dataset_id,
+
+
+
+    account_cap -> edited holds all dataset ids owned by the admin
 }
 
 fun init(otw: TUSK_BAZAAR, ctx: &mut TxContext) {
@@ -18,11 +35,22 @@ fun init(otw: TUSK_BAZAAR, ctx: &mut TxContext) {
     transfer::share_object(TuskBazaarNamespace { id: object::new(ctx) });
 }
 
-// TODO: Use Minter object if time allows
+
+
+New dataset
+
+package-id + address + address_counter(0 in the first) -> tuskbazaar_account_cap
+
+when someone tries to create a new one without using account_cap (but they have it)
+abort
+
+package-id + address + address_counter_from_account_cap -> add dataset_id to the old
+tuskbazaar_account_cap
+
+
 public fun new_dataset(
     self: &mut TuskBazaarNamespace,
-    publ: &Publisher,
-    der_key: String,
+    publ: &mut AccountCap,
     admins: vector<address>,
     name: String,
     description: String,
@@ -35,11 +63,11 @@ public fun new_dataset(
     assert!(publ.from_package<TUSK_BAZAAR>(), EInvalidPublisher);
     dataset::new_derived(
         &mut self.id,
-        der_key,
+        namespace.global_counter,
         vec_set::from_keys(admins),
         name,
         description,
-        image_url,
+        image_url, ///https://aggreator-url/blob-id
         project,
         project_url,
         envelope,
