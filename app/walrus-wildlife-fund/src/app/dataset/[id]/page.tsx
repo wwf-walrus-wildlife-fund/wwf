@@ -80,8 +80,17 @@ export default function DatasetDetailPage({
     }
   };
 
-  const handleDecrypt = () => {
-    decrypt(id);
+  const handleDecrypt = async () => {
+    const result = await decrypt(id);
+    if (!result) return;
+    const text = await result.text();
+    const txtBlob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(txtBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${dataset.name.replace(/\s+/g, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleDownload = () => {
@@ -89,7 +98,8 @@ export default function DatasetDetailPage({
     const url = URL.createObjectURL(decryptedData);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${dataset.name.replace(/\s+/g, "_")}.json`;
+    const safeName = dataset.name.replace(/\s+/g, "_");
+    a.download = safeName.includes(".") ? safeName : `${safeName}.bin`;
     a.click();
     URL.revokeObjectURL(url);
   };

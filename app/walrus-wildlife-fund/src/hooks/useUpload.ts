@@ -58,20 +58,6 @@ function makeProgress(step: UploadStep, percent: number, message: string): Uploa
 }
 
 // ============================================================
-// AES-256-GCM — used for encrypting dataset blobs before Walrus
-// ============================================================
-
-async function aesGcmEncrypt(data: Uint8Array, dek: Uint8Array): Promise<Uint8Array> {
-    const iv = crypto.getRandomValues(new Uint8Array(12));
-    const key = await crypto.subtle.importKey('raw', dek.buffer as ArrayBuffer, 'AES-GCM', false, ['encrypt']);
-    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data.buffer as ArrayBuffer);
-    const result = new Uint8Array(iv.length + ciphertext.byteLength);
-    result.set(iv);
-    result.set(new Uint8Array(ciphertext), iv.length);
-    return result;
-}
-
-// ============================================================
 // useUpload — full pipeline: read → encrypt → Walrus → Seal → TX
 // ============================================================
 
@@ -79,9 +65,9 @@ async function aesGcmEncrypt(data: Uint8Array, dek: Uint8Array): Promise<Uint8Ar
  * Pipeline:
  * 1. Read file bytes
  * 2. Derive future Dataset object ID from namespace counter
- * 3. AES-256-GCM encrypt file with random DEK
- * 4. Upload encrypted blob to Walrus
- * 5. Seal-encrypt the DEK (stored on-chain as envelope)
+ * 3. Seal-encrypt full file bytes (identity = dataset_id + version)
+ * 4. Upload Seal ciphertext blob to Walrus
+ * 5. Publish dataset metadata and blob IDs on-chain
  * 6. Build & execute new_derived + share transaction
  */
 export function useUpload(): UseUploadReturn {
@@ -186,10 +172,17 @@ export function useUpload(): UseUploadReturn {
                     });
                 }
 
-                // ── 3. AES-256-GCM encrypt file with random DEK ──
-                setProgress(makeProgress('encrypting', 30, 'Encrypting data…'));
-                const dek = crypto.getRandomValues(new Uint8Array(32));
-                const encryptedData = await aesGcmEncrypt(fileBytes, dek);
+                // ── 3. Seal-encrypt full dataset bytes ──
+                setProgress(makeProgress('sealing-key', 30, 'Encrypting with Seal…'));
+                const sealClient = getSealClient(suiClient);
+                const sealId = buildSealId(datasetObjectId, 0);
+                const { encryptedObject } = await sealClient.encrypt({
+                    threshold: SEAL_THRESHOLD,
+                    packageId,
+                    id: sealId,
+                    data: fileBytes,
+                });
+                const encryptedData = encryptedObject as Uint8Array;
 
                 // ── 4. Upload encrypted blob to Walrus ──
                 setProgress(makeProgress('uploading', 50, 'Uploading to Walrus…'));
@@ -204,18 +197,8 @@ export function useUpload(): UseUploadReturn {
                     });
                 }
 
-                // ── 5. Seal-encrypt the DEK → on-chain envelope ──
-                setProgress(makeProgress('sealing-key', 65, 'Sealing encryption key…'));
-                const sealClient = getSealClient(suiClient);
-                const sealId = buildSealId(datasetObjectId, 0);
-
-                const { encryptedObject } = await sealClient.encrypt({
-                    threshold: SEAL_THRESHOLD,
-                    packageId,
-                    id: sealId,
-                    data: dek,
-                });
-                const envelopeBytes = encryptedObject as Uint8Array;
+                // ── 5. Publish metadata (envelope bytes unused in Seal-full-blob flow) ──
+                setProgress(makeProgress('publishing-tx', 70, 'Publishing metadata…'));
 
                 // ── 6. Build & execute on-chain transaction ──
                 setProgress(makeProgress('publishing-tx', 80, 'Publishing on-chain…'));
@@ -236,7 +219,7 @@ export function useUpload(): UseUploadReturn {
                         tx.pure.string(params.imageUrl ?? ''),
                         tx.pure.string(params.project ?? params.category),
                         tx.pure.string(params.projectUrl ?? ''),
-                        tx.pure.vector('u8', Array.from(envelopeBytes)),
+                        tx.pure.vector('u8', []),
                         tx.pure.vector('string', [blobId]),
                         tx.pure.u64(priceMist),
                         tx.pure.address(params.fundsReceiver ?? account.address),
