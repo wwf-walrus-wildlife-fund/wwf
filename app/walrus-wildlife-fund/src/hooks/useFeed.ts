@@ -9,6 +9,11 @@ interface FeedData {
 let feedCache: FeedData | null = null;
 let feedPromise: Promise<FeedData> | null = null;
 
+export function invalidateFeedCache() {
+  feedCache = null;
+  feedPromise = null;
+}
+
 function fetchFeedOnce(): Promise<FeedData> {
   if (feedCache) return Promise.resolve(feedCache);
   if (feedPromise) return feedPromise;

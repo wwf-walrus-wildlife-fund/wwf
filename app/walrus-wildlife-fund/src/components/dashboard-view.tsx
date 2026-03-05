@@ -9,6 +9,8 @@ import {
   Clock,
   ExternalLink,
   Eye,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
@@ -16,6 +18,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FindUserForm } from "@/components/find-user-form";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useDeleteBlob } from "@/hooks/useDeleteBlob";
 import Link from "next/link";
 
 const statIcons: Record<string, typeof Upload> = {
@@ -39,12 +42,27 @@ interface DashboardViewProps {
 export function DashboardView({ address }: DashboardViewProps) {
   const { publishedDatasets, purchasedDatasets, stats, isLoading, error } =
     useDashboard(address);
+  const { deleteBlob, isDeleting } = useDeleteBlob();
   const [activeTab, setActiveTab] = useState<"published" | "purchased">(
     "published",
   );
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const activeDatasets =
     activeTab === "published" ? publishedDatasets : purchasedDatasets;
+
+  async function handleDelete(datasetId: string, blobObjectIds: string[]) {
+    if (!confirm("Delete the Walrus blob(s) for this dataset? This cannot be undone.")) return;
+    setDeletingId(datasetId);
+    try {
+      for (const objId of blobObjectIds) {
+        const ok = await deleteBlob(objId);
+        if (!ok) break;
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   const subtitle = address
     ? `Showing datasets for: ${address}`
@@ -305,13 +323,29 @@ export function DashboardView({ address }: DashboardViewProps) {
                             </span>
                           </td>
                           <td className="px-6 py-4">
-                            <Link href={`/dataset/${encodeURIComponent(d.id)}`} className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
-                              {activeTab === "published" ? (
-                                <Eye className="w-4 h-4" />
-                              ) : (
-                                <ExternalLink className="w-4 h-4" />
+                            <div className="flex items-center gap-1">
+                              <Link href={`/dataset/${encodeURIComponent(d.id)}`} className="p-2 rounded-lg text-white/15 hover:text-white/40 hover:bg-white/5 transition-all opacity-0 group-hover:opacity-100">
+                                {activeTab === "published" ? (
+                                  <Eye className="w-4 h-4" />
+                                ) : (
+                                  <ExternalLink className="w-4 h-4" />
+                                )}
+                              </Link>
+                              {activeTab === "published" && d.blobObjectIds && d.blobObjectIds.length > 0 && (
+                                <button
+                                  onClick={() => handleDelete(d.id, d.blobObjectIds!)}
+                                  disabled={isDeleting && deletingId === d.id}
+                                  className="p-2 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                  title="Delete Walrus blob"
+                                >
+                                  {isDeleting && deletingId === d.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </button>
                               )}
-                            </Link>
+                            </div>
                           </td>
                         </motion.tr>
                       ))}

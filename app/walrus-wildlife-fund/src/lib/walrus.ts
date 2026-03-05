@@ -32,6 +32,8 @@ export function normalizeWalrusEpochs(epochs: number): number {
 export interface WalrusUploadResponse {
     /** The blob ID assigned by Walrus */
     blobId: string;
+    /** Sui object ID of the blob (needed for deletion) */
+    blobObjectId: string;
     /** Whether this was a new upload or a reference to existing blob */
     isNew: boolean;
 }
@@ -98,11 +100,13 @@ export async function uploadToWalrus(
     if (result.newlyCreated) {
         return {
             blobId: result.newlyCreated.blobObject.blobId,
+            blobObjectId: result.newlyCreated.blobObject.id,
             isNew: true,
         };
     } else if (result.alreadyCertified) {
         return {
             blobId: result.alreadyCertified.blobId,
+            blobObjectId: result.alreadyCertified.blobObject?.id ?? "",
             isNew: false,
         };
     }
@@ -225,4 +229,268 @@ export async function queryWalrusBlob(blobId: string): Promise<WalrusBlobQueryRe
  */
 export function getWalrusImageUrl(blobId: string): string {
     return `${WALRUS_AGGREGATOR_URL}/v1/blobs/${blobId}`;
+}
+
+// ============================================================
+// Quilt Storage — Upload & Download via dedicated /v1/quilts API
+// ============================================================
+
+export interface QuiltFileInput {
+    /** Unique identifier for this file within the quilt (used as the form field name). */
+    identifier: string;
+    /** Raw file bytes to store. */
+    data: Uint8Array;
+    /** Optional Walrus-native tags for this patch. */
+    tags?: Record<string, string>;
+}
+
+export interface QuiltPatchInfo {
+    identifier: string;
+    quiltPatchId: string;
+}
+
+export interface WalrusQuiltUploadResponse {
+    /** The quilt-level blob ID. */
+    quiltBlobId: string;
+    /** Sui object ID of the quilt blob (needed for deletion). */
+    quiltBlobObjectId: string;
+    /** Per-file patch info (identifier + quiltPatchId). */
+    patches: QuiltPatchInfo[];
+    isNew: boolean;
+}
+
+/**
+ * Upload multiple files as a Walrus quilt via `PUT /v1/quilts` (multipart/form-data).
+ *
+ * Each file becomes a separate patch inside the quilt, addressable by its
+ * `quiltPatchId` or by `quiltBlobId + identifier`.
+ */
+export async function uploadQuiltToWalrus(
+    files: QuiltFileInput[],
+    userAddress: string,
+    epochs: number = WALRUS_EPOCHS,
+): Promise<WalrusQuiltUploadResponse> {
+    const safeEpochs = normalizeWalrusEpochs(epochs);
+    const url = `${WALRUS_PUBLISHER_URL}/v1/quilts?epochs=${safeEpochs}&send_object_to=${userAddress}`;
+
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append(file.identifier, new Blob([file.data as BlobPart]));
+    }
+
+    const filesWithTags = files.filter((f) => f.tags && Object.keys(f.tags).length > 0);
+    if (filesWithTags.length > 0) {
+        const metadata = filesWithTags.map((f) => ({
+            identifier: f.identifier,
+            tags: f.tags,
+        }));
+        formData.append("_metadata", JSON.stringify(metadata));
+    }
+
+    let response: Response;
+    try {
+        response = await fetch(url, { method: "PUT", body: formData });
+    } catch (err) {
+        console.error("[walrus] quilt upload request failed", {
+            url,
+            fileCount: files.length,
+            error: err,
+        });
+        throw err;
+    }
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error("[walrus] quilt upload failed", {
+            url,
+            status: response.status,
+            body: errorText,
+        });
+        throw new Error(`Walrus quilt upload failed (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log("[walrus] quilt upload raw response:", JSON.stringify(result, null, 2));
+
+    // Tolerate both camelCase and snake_case top-level keys
+    const blobStoreResult = result.blobStoreResult ?? result.blob_store_result;
+    let quiltBlobId: string;
+    let quiltBlobObjectId: string;
+    let isNew: boolean;
+
+    if (blobStoreResult?.newlyCreated) {
+        quiltBlobId = blobStoreResult.newlyCreated.blobObject.blobId;
+        quiltBlobObjectId = blobStoreResult.newlyCreated.blobObject.id;
+        isNew = true;
+    } else if (blobStoreResult?.alreadyCertified) {
+        quiltBlobId = blobStoreResult.alreadyCertified.blobId;
+        quiltBlobObjectId = blobStoreResult.alreadyCertified.blobObject?.id ?? "";
+        isNew = false;
+    } else if (blobStoreResult?.newly_created) {
+        quiltBlobId = blobStoreResult.newly_created.blob_object?.blob_id
+            ?? blobStoreResult.newly_created.blobObject?.blobId;
+        quiltBlobObjectId = blobStoreResult.newly_created.blob_object?.id
+            ?? blobStoreResult.newly_created.blobObject?.id ?? "";
+        isNew = true;
+    } else if (blobStoreResult?.already_certified) {
+        quiltBlobId = blobStoreResult.already_certified.blob_id
+            ?? blobStoreResult.already_certified.blobId;
+        quiltBlobObjectId = blobStoreResult.already_certified.blob_object?.id ?? "";
+        isNew = false;
+    } else {
+        if (result.newlyCreated) {
+            quiltBlobId = result.newlyCreated.blobObject.blobId;
+            quiltBlobObjectId = result.newlyCreated.blobObject.id;
+            isNew = true;
+        } else if (result.alreadyCertified) {
+            quiltBlobId = result.alreadyCertified.blobId;
+            quiltBlobObjectId = result.alreadyCertified.blobObject?.id ?? "";
+            isNew = false;
+        } else {
+            throw new Error(
+                `Unexpected Walrus quilt response format. Keys: ${Object.keys(result).join(", ")}`,
+            );
+        }
+    }
+
+    // Tolerate both camelCase and snake_case for the patches array
+    const rawPatches: Record<string, unknown>[] =
+        result.storedQuiltBlobs
+        ?? result.stored_quilt_blobs
+        ?? result.storedQuiltPatches
+        ?? result.stored_quilt_patches
+        ?? [];
+
+    const patches: QuiltPatchInfo[] = rawPatches.map((p) => ({
+        identifier: (p.identifier ?? p.Identifier ?? "") as string,
+        quiltPatchId: (p.quiltPatchId ?? p.quilt_patch_id ?? p.QuiltPatchId ?? p.patchId ?? p.patch_id ?? "") as string,
+    }));
+
+    console.log("[walrus] quilt upload parsed patches:", patches);
+
+    if (patches.length === 0) {
+        console.warn(
+            "[walrus] quilt upload returned 0 patches. " +
+            "Response top-level keys:", Object.keys(result),
+        );
+    }
+
+    return { quiltBlobId, quiltBlobObjectId, patches, isNew };
+}
+
+/**
+ * Download a single quilt patch by its quiltPatchId.
+ */
+export async function downloadQuiltPatch(quiltPatchId: string): Promise<Uint8Array> {
+    const url = `${WALRUS_AGGREGATOR_URL}/v1/blobs/by-quilt-patch-id/${quiltPatchId}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(
+            `Walrus quilt patch download failed (${response.status}): ${await response.text()}`,
+        );
+    }
+    return new Uint8Array(await response.arrayBuffer());
+}
+
+/**
+ * Download a single quilt patch by quilt blob ID + identifier.
+ */
+export async function downloadQuiltPatchByIdentifier(
+    quiltBlobId: string,
+    identifier: string,
+): Promise<Uint8Array> {
+    const url = `${WALRUS_AGGREGATOR_URL}/v1/blobs/by-quilt-id/${quiltBlobId}/${encodeURIComponent(identifier)}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(
+            `Walrus quilt patch download failed (${response.status}): ${await response.text()}`,
+        );
+    }
+    return new Uint8Array(await response.arrayBuffer());
+}
+
+/**
+ * Download multiple quilt patches in parallel with a concurrency limit.
+ */
+export async function downloadMultipleQuiltPatches(
+    patchIds: string[],
+    concurrency: number = DEFAULT_CONCURRENCY,
+): Promise<Uint8Array[]> {
+    const results: Uint8Array[] = new Array(patchIds.length);
+    let cursor = 0;
+
+    async function next(): Promise<void> {
+        while (cursor < patchIds.length) {
+            const idx = cursor++;
+            results[idx] = await downloadQuiltPatch(patchIds[idx]);
+        }
+    }
+
+    const workers = Array.from({ length: Math.min(concurrency, patchIds.length) }, () => next());
+    await Promise.all(workers);
+    return results;
+}
+
+// ============================================================
+// Quilt Patch Listing — query aggregator for patches in a quilt
+// ============================================================
+
+export interface QuiltPatchListEntry {
+    identifier: string;
+    quiltPatchId: string;
+}
+
+/**
+ * List all patches in a quilt by querying the aggregator.
+ * `GET /v1/quilts/{quiltBlobId}/patches`
+ *
+ * Returns the identifier + quiltPatchId for every patch in the quilt.
+ */
+export async function listQuiltPatches(quiltBlobId: string): Promise<QuiltPatchListEntry[]> {
+    const url = `${WALRUS_AGGREGATOR_URL}/v1/quilts/${quiltBlobId}/patches`;
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error(
+            `Walrus list quilt patches failed (${response.status}): ${await response.text()}`,
+        );
+    }
+    const data = await response.json();
+    console.log("[walrus] listQuiltPatches raw response:", JSON.stringify(data, null, 2));
+
+    const rawArr: Record<string, unknown>[] | null = Array.isArray(data)
+        ? data
+        : Array.isArray((data as Record<string, unknown>).patches)
+            ? (data as Record<string, unknown>).patches as Record<string, unknown>[]
+            : null;
+
+    if (!rawArr) {
+        throw new Error(
+            `Unexpected response format from quilt patches listing. ` +
+            `Type: ${typeof data}, keys: ${data && typeof data === "object" ? Object.keys(data).join(", ") : "N/A"}`,
+        );
+    }
+
+    return rawArr.map((entry) => {
+        // Log each raw entry so we can see exactly what field names the aggregator uses
+        console.log("[walrus] raw patch entry keys:", Object.keys(entry), "values:", entry);
+
+        const identifier = String(
+            entry.identifier ?? entry.Identifier ?? entry.name ?? "",
+        );
+
+        // Try every plausible field name for the patch ID
+        const patchId = String(
+            entry.quiltPatchId
+            ?? entry.QuiltPatchId
+            ?? entry.quilt_patch_id
+            ?? entry.patchId
+            ?? entry.PatchId
+            ?? entry.patch_id
+            ?? entry.id
+            ?? entry.Id
+            ?? "",
+        );
+
+        return { identifier, quiltPatchId: patchId };
+    });
 }

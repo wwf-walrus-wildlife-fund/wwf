@@ -8,9 +8,13 @@ export interface ManifestFileEntry {
   mimeType: string;
   /** Index into blob_ids for "blobs" storageType. */
   blobIndex: number;
-  /** Byte offset within quilt blob (only for "quilt" storageType). */
+  /** Safe identifier used as the quilt form field name (only for "quilt" storageType). */
+  quiltIdentifier?: string;
+  /** Walrus quilt patch ID (only for "quilt" storageType). */
+  quiltPatchId?: string;
+  /** @deprecated Legacy: byte offset within client-encoded quilt blob. */
   patchOffset?: number;
-  /** Byte length within quilt blob (only for "quilt" storageType). */
+  /** @deprecated Legacy: byte length within client-encoded quilt blob. */
   patchLength?: number;
 }
 
@@ -18,6 +22,8 @@ export interface FileManifest {
   version: number;
   storageType: "blobs" | "quilt";
   files: ManifestFileEntry[];
+  /** Sui object IDs of the Walrus blob(s) — needed for deletion. */
+  blobObjectIds?: string[];
 }
 
 // ============================================================
@@ -39,6 +45,8 @@ export interface Dataset {
   imageUrl?: string;
   projectUrl?: string;
   blob_ids?: string[];
+  /** Sui object IDs of the Walrus blob(s) — for deletion. */
+  blobObjectIds?: string[];
   /** Parsed file manifest (present on envelope-encrypted datasets). */
   fileManifest?: FileManifest;
   envelopeVersion?: number;

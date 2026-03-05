@@ -12,12 +12,14 @@ import {
   Loader2,
   Database,
   Files,
+  ExternalLink,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { useUpload } from "@/hooks/useUpload";
+import { invalidateFeedCache } from "@/hooks/useFeed";
 import { WALRUS_MAX_EPOCHS } from "@/lib/walrus";
 
 function formatSize(bytes: number) {
@@ -37,7 +39,7 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("AI Training");
 
-  const { upload, isUploading, isSuccess, error, reset } = useUpload();
+  const { upload, isUploading, isSuccess, result, error, reset } = useUpload();
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const arr = Array.from(incoming);
@@ -79,6 +81,11 @@ export default function UploadPage() {
   };
 
   if (isSuccess) {
+    invalidateFeedCache();
+
+    const firstBlobId = result?.blobIds?.[0];
+    const txDigest = result?.txDigest;
+
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -101,9 +108,39 @@ export default function UploadPage() {
                 : `${files.length} files have been encrypted and stored on Walrus`}{" "}
               for {storageDays} days.
             </p>
-            <p className="text-white/20 mb-8" style={{ fontSize: "0.8rem" }}>
+            <p className="text-white/20 mb-6" style={{ fontSize: "0.8rem" }}>
               Transaction sponsored &middot; 0 SUI gas fee
             </p>
+
+            {(firstBlobId || txDigest) && (
+              <div className="space-y-2 mb-8">
+                {firstBlobId && (
+                  <a
+                    href={`https://walruscan.com/testnet/blob/${firstBlobId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-[#65C8D0]/80 hover:text-[#65C8D0] transition-colors"
+                    style={{ fontSize: "0.8rem" }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    View blob on Walruscan
+                  </a>
+                )}
+                {txDigest && (
+                  <a
+                    href={`https://testnet.suivision.xyz/txblock/${txDigest}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 text-[#a29bfe]/80 hover:text-[#a29bfe] transition-colors"
+                    style={{ fontSize: "0.8rem" }}
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    View transaction on SuiVision
+                  </a>
+                )}
+              </div>
+            )}
+
             <div className="flex gap-3 justify-center">
               <button
                 onClick={() => {

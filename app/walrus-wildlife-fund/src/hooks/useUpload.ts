@@ -7,8 +7,7 @@ import { bcs } from '@mysten/sui/bcs';
 import { deriveObjectID } from '@mysten/sui/utils';
 import { encryptDEK } from '@/lib/seal';
 import { generateDEK, encryptFile } from '@/lib/crypto';
-import { normalizeWalrusEpochs, uploadToWalrus, uploadMultipleToWalrus } from '@/lib/walrus';
-import { encodeQuiltFromFiles } from '@/lib/quilt';
+import { normalizeWalrusEpochs, uploadToWalrus, uploadMultipleToWalrus, uploadQuiltToWalrus } from '@/lib/walrus';
 import type { FileManifest } from '@/lib/types';
 
 // ============================================================
@@ -47,11 +46,19 @@ interface UploadParams {
     useQuilt?: boolean;
 }
 
+export interface UploadResult {
+    datasetObjectId: string;
+    blobIds: string[];
+    blobObjectIds: string[];
+    txDigest: string;
+}
+
 interface UseUploadReturn {
     upload: (params: UploadParams) => Promise<string | null>;
     progress: UploadProgress;
     isUploading: boolean;
     isSuccess: boolean;
+    result: UploadResult | null;
     error: string | null;
     reset: () => void;
 }
@@ -63,17 +70,13 @@ function makeProgress(step: UploadStep, percent: number, message: string): Uploa
 }
 
 /**
- * Heuristic: use quilt when there are many small files.
- * Threshold: more than 3 files AND total size under 50 MiB.
+ * Use quilt when there are multiple files (2+).
+ * Single files go as a regular blob. The Walrus quilt API handles
+ * batching and is more cost-efficient for many small files.
  */
-const QUILT_FILE_COUNT_THRESHOLD = 3;
-const QUILT_TOTAL_SIZE_THRESHOLD = 50 * 1024 * 1024;
-
 function shouldUseQuilt(files: File[], forceQuilt?: boolean): boolean {
     if (forceQuilt) return true;
-    if (files.length <= QUILT_FILE_COUNT_THRESHOLD) return false;
-    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-    return totalSize < QUILT_TOTAL_SIZE_THRESHOLD;
+    return files.length > 1;
 }
 
 // ============================================================
@@ -93,6 +96,7 @@ export function useUpload(): UseUploadReturn {
     const [progress, setProgress] = useState<UploadProgress>(INITIAL_PROGRESS);
     const [isUploading, setIsUploading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const account = useCurrentAccount();
@@ -103,6 +107,7 @@ export function useUpload(): UseUploadReturn {
         setProgress(INITIAL_PROGRESS);
         setIsUploading(false);
         setIsSuccess(false);
+        setResult(null);
         setError(null);
     }, []);
 
@@ -184,30 +189,61 @@ export function useUpload(): UseUploadReturn {
                 const useQuilt = shouldUseQuilt(params.files, params.useQuilt);
 
                 let blobIds: string[];
+                let blobObjectIds: string[];
                 let manifest: FileManifest;
 
                 if (useQuilt) {
-                    // Bundle all encrypted files into a single quilt blob
-                    const { quiltBytes, patches } = await encodeQuiltFromFiles(
-                        suiClient as any,
+                    // Upload encrypted files as a Walrus quilt via /v1/quilts.
+                    // Use safe identifiers (no spaces/special chars) so the
+                    // response's storedQuiltBlobs identifiers match reliably.
+                    const identifiers = encryptedBuffers.map((_, i) => `patch-${i}`);
+                    const quiltResult = await uploadQuiltToWalrus(
                         encryptedBuffers.map((buf, i) => ({
-                            identifier: params.files[i].name,
-                            contents: buf,
+                            identifier: identifiers[i],
+                            data: buf,
                         })),
+                        account.address,
+                        epochs,
                     );
-                    const { blobId } = await uploadToWalrus(quiltBytes, account.address, epochs);
-                    blobIds = [blobId];
-                    manifest = {
-                        version: 1,
-                        storageType: 'quilt',
-                        files: params.files.map((f, i) => ({
+                    blobIds = [quiltResult.quiltBlobId];
+                    blobObjectIds = quiltResult.quiltBlobObjectId
+                        ? [quiltResult.quiltBlobObjectId]
+                        : [];
+
+                    const patchMap = new Map(
+                        quiltResult.patches.map((p) => [p.identifier, p.quiltPatchId]),
+                    );
+
+                    console.log('[useUpload] quilt identifiers sent:', identifiers);
+                    console.log('[useUpload] quilt patches received:', quiltResult.patches);
+                    console.log('[useUpload] patchMap entries:', [...patchMap.entries()]);
+
+                    // Validate every file got a patch ID before storing manifest
+                    const manifestFiles = params.files.map((f, i) => {
+                        const patchId = patchMap.get(identifiers[i]);
+                        if (!patchId) {
+                            throw new Error(
+                                `Quilt upload succeeded but no patch ID returned for ` +
+                                `identifier "${identifiers[i]}" (file "${f.name}"). ` +
+                                `Response had ${quiltResult.patches.length} patches: ` +
+                                `[${quiltResult.patches.map((p) => p.identifier).join(', ')}]`,
+                            );
+                        }
+                        return {
                             name: f.name,
                             size: f.size,
                             mimeType: f.type || 'application/octet-stream',
                             blobIndex: 0,
-                            patchOffset: patches[i].startIndex,
-                            patchLength: patches[i].endIndex - patches[i].startIndex,
-                        })),
+                            quiltIdentifier: identifiers[i],
+                            quiltPatchId: patchId,
+                        };
+                    });
+
+                    manifest = {
+                        version: 1,
+                        storageType: 'quilt',
+                        files: manifestFiles,
+                        blobObjectIds,
                     };
                 } else {
                     // Upload each encrypted file as a separate blob
@@ -220,9 +256,13 @@ export function useUpload(): UseUploadReturn {
                         epochs,
                     );
                     blobIds = results.map((r) => r.blobId);
+                    blobObjectIds = results
+                        .map((r) => r.blobObjectId)
+                        .filter(Boolean);
                     manifest = {
                         version: 1,
                         storageType: 'blobs',
+                        blobObjectIds,
                         files: params.files.map((f, i) => ({
                             name: f.name,
                             size: f.size,
@@ -273,11 +313,13 @@ export function useUpload(): UseUploadReturn {
                     });
                 }
 
-                await signAndExecuteTransaction({
+                const txResult = await signAndExecuteTransaction({
                     transaction: tx,
                 });
 
                 // ── Done ──
+                const txDigest = (txResult as any)?.digest ?? '';
+                setResult({ datasetObjectId, blobIds, blobObjectIds, txDigest });
                 setIsSuccess(true);
                 setProgress(makeProgress('done', 100, 'Dataset published!'));
                 return datasetObjectId;
@@ -293,5 +335,5 @@ export function useUpload(): UseUploadReturn {
         [account, signAndExecuteTransaction, suiClient],
     );
 
-    return { upload, progress, isUploading, isSuccess, error, reset };
+    return { upload, progress, isUploading, isSuccess, result, error, reset };
 }
