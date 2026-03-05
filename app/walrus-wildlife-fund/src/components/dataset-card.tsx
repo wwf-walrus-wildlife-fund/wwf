@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Database, Clock, Users, ArrowUpRight } from "lucide-react";
+import { Database, Clock, Files, ArrowUpRight } from "lucide-react";
 import type { Dataset } from "@/lib/types";
 
 const categoryColors: Record<string, string> = {
@@ -54,7 +54,7 @@ export function DatasetCard({ dataset }: { dataset: Dataset }) {
             <Database className="w-3.5 h-3.5" /> {dataset.size}
           </span>
           <span className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" /> {dataset.downloads}
+            <Files className="w-3.5 h-3.5" /> {dataset.fileManifest?.files.length ?? 0} file{(dataset.fileManifest?.files.length ?? 0) !== 1 ? "s" : ""}
           </span>
           <span className="flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5" /> {dataset.expiresIn}

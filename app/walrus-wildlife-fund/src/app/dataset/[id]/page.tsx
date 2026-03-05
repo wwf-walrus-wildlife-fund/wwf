@@ -8,7 +8,6 @@ import {
   Download,
   Clock,
   Database,
-  Users,
   Shield,
   Copy,
   CheckCircle2,
@@ -194,14 +193,42 @@ export default function DatasetDetailPage({
                     {dataset.description}
                   </p>
 
+                  {dataset.fileManifest && dataset.fileManifest.files.length > 0 && (
+                    <div className="mb-6">
+                      <h4
+                        className="text-white/30 mb-2"
+                        style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                      >
+                        Included Files
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {dataset.fileManifest.files.map((f, i) => (
+                          <span
+                            key={f.name + i}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-white/50"
+                            style={{ fontSize: "0.8rem" }}
+                          >
+                            <FileText className="w-3 h-3 text-white/20" />
+                            {f.name}
+                            {f.size > 0 && (
+                              <span className="text-white/20" style={{ fontSize: "0.7rem" }}>
+                                ({formatFileSize(f.size)})
+                              </span>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {[
                       { label: "Size", value: dataset.size, icon: Database },
                       { label: "Format", value: dataset.format, icon: Download },
                       {
-                        label: "Downloads",
-                        value: dataset.downloads.toLocaleString(),
-                        icon: Users,
+                        label: "Files",
+                        value: (dataset.fileManifest?.files.length ?? 0).toString(),
+                        icon: Files,
                       },
                       { label: "Expires", value: dataset.expiresIn, icon: Clock },
                     ].map((item) => (

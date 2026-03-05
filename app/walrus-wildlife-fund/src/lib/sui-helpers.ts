@@ -61,6 +61,13 @@ function parseFileManifest(raw: unknown): FileManifest | undefined {
   return undefined;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + " GB";
+}
+
 function extractEnvelopeKeyLength(envelope: any): number {
   const key = envelope?.encrypted_key ?? envelope?.fields?.encrypted_key;
   if (Array.isArray(key)) return key.length;
@@ -77,6 +84,9 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
 
   const manifest = parseFileManifest(fields?.file_manifest);
   const envelopeKeyLen = extractEnvelopeKeyLength(fields?.envelope);
+  const totalBytes = manifest
+    ? manifest.files.reduce((sum, f) => sum + (f.size ?? 0), 0)
+    : 0;
 
   return {
     id: objectId,
@@ -87,7 +97,7 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
     seller: String(fields?.funds_receiver ?? ""),
     imageUrl: String(fields?.image_url ?? ""),
     projectUrl: String(fields?.project_url ?? ""),
-    size: "N/A",
+    size: totalBytes > 0 ? formatBytes(totalBytes) : "N/A",
     format: "Encrypted",
     downloads: 0,
     expiresIn: "N/A",
