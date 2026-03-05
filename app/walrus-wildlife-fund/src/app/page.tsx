@@ -63,7 +63,7 @@ export default function LandingPage() {
   const { stats } = useStats();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background retro-shell">
       <Navbar />
       <div className="relative overflow-hidden">
         {/* Hero */}
@@ -87,10 +87,10 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#6C5CE7]/20 bg-[#6C5CE7]/5 mb-8">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#65C8D0] animate-pulse" />
-                <span className="text-[#a29bfe]" style={{ fontSize: "0.8rem" }}>
-                  Powered by Sui &middot; Stored on Walrus
+              <div className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#4d6cb3] bg-[#1b2a4f] mb-8">
+                <div className="w-2 h-2 bg-[#8ef8f7] animate-pulse" />
+                <span className="text-[#8ef8f7]" style={{ fontSize: "0.85rem" }}>
+                  STAGE 01 - Sui + Walrus online
                 </span>
               </div>
             </motion.div>
@@ -99,13 +99,13 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="text-white mb-6 tracking-tight max-w-4xl mx-auto"
+              className="text-[#f8f7d2] mb-6 tracking-tight max-w-4xl mx-auto"
               style={{ fontSize: "clamp(2rem, 5vw, 4rem)", lineHeight: "1.1" }}
             >
-              The marketplace for
+              The Arcade for
               <br />
-              <span className="bg-gradient-to-r from-[#4834D4] via-[#A29BFE] to-[#65C8D0] bg-clip-text text-transparent">
-                data that moves
+              <span className="bg-gradient-to-r from-[#ff4d9e] via-[#ffe066] to-[#8ef8f7] bg-clip-text text-transparent">
+                pixel-powered data
               </span>
             </motion.h1>
 
@@ -113,11 +113,11 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-white/35 max-w-xl mx-auto mb-10"
+              className="retro-muted max-w-xl mx-auto mb-10"
               style={{ fontSize: "1.05rem", lineHeight: "1.7" }}
             >
-              Upload, monetize, and buy data. Built for humans, AI agents,
-              and LLMs. Seamless on-chain transactions with zero friction.
+              Upload, monetize, and unlock datasets in a neon block-market.
+              Retro look, modern on-chain speed.
             </motion.p>
 
             <motion.div
@@ -128,16 +128,16 @@ export default function LandingPage() {
             >
               <Link
                 href="/marketplace"
-                className="group px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 flex items-center gap-2"
+                className="group px-8 py-3.5 border-2 border-[#ffe066] bg-[#ff4d9e] text-[#0a1020] hover:bg-[#ffe066] transition-all duration-300 flex items-center gap-2"
               >
-                Explore Marketplace
+                Start Game
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
                 href="/upload"
-                className="px-8 py-3.5 rounded-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/5 hover:border-white/20 transition-all duration-300"
+                className="px-8 py-3.5 border-2 border-[#4d6cb3] text-[#8ef8f7] bg-[#1b2a4f] hover:text-[#ffe066] hover:border-[#ffe066] transition-all duration-300"
               >
-                Start Selling
+                Drop Blocks
               </Link>
             </motion.div>
 
@@ -150,11 +150,11 @@ export default function LandingPage() {
             >
               {stats.map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <div className="text-white mb-1" style={{ fontSize: "1.5rem" }}>
+                  <div className="text-[#ffe066] mb-1" style={{ fontSize: "1.6rem" }}>
                     {stat.value}
                   </div>
                   <div
-                    className="text-white/25"
+                    className="text-[#85a3c7]"
                     style={{
                       fontSize: "0.75rem",
                       letterSpacing: "0.05em",
@@ -173,10 +173,10 @@ export default function LandingPage() {
         <section className="relative py-32 px-6 lg:px-10">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>
+              <h2 className="text-[#8ef8f7] mb-4" style={{ fontSize: "2rem" }}>
                 Built different
               </h2>
-              <p className="text-white/30 max-w-lg mx-auto">
+              <p className="retro-muted max-w-lg mx-auto">
                 Every interaction is designed to feel invisible. No popups, no
                 confirmations, no friction.
               </p>
@@ -190,21 +190,21 @@ export default function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="group p-8 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/[0.1] transition-all duration-300"
+                  className="group p-8 retro-panel transition-all duration-300"
                 >
                   <div
-                    className={`w-12 h-12 rounded-lg bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 opacity-80 group-hover:opacity-100 transition-opacity`}
+                    className={`w-12 h-12 border-2 border-black bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4 opacity-85 group-hover:opacity-100 transition-opacity`}
                   >
                     <feature.icon className="w-5 h-5 text-white" />
                   </div>
                   <h3
-                    className="text-white mb-2"
+                    className="text-[#f8f7d2] mb-2"
                     style={{ fontSize: "0.95rem" }}
                   >
                     {feature.title}
                   </h3>
                   <p
-                    className="text-white/30"
+                    className="retro-muted"
                     style={{ fontSize: "0.8rem", lineHeight: "1.6" }}
                   >
                     {feature.description}
@@ -220,10 +220,10 @@ export default function LandingPage() {
           <GlowOrb color="purple" size="400px" top="0" right="10%" opacity={0.06} />
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-white mb-4" style={{ fontSize: "2rem" }}>
+              <h2 className="text-[#8ef8f7] mb-4" style={{ fontSize: "2rem" }}>
                 How it works
               </h2>
-              <p className="text-white/30">Three steps. No wallet required.</p>
+              <p className="retro-muted">Three stages. No wallet boss fight.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -237,7 +237,7 @@ export default function LandingPage() {
                   className="relative"
                 >
                   <div
-                    className="text-[#6C5CE7]/20 mb-4"
+                    className="text-[#ff4d9e]/60 mb-4"
                     style={{
                       fontSize: "3rem",
                       fontFamily: "JetBrains Mono, monospace",
@@ -245,9 +245,9 @@ export default function LandingPage() {
                   >
                     {item.step}
                   </div>
-                  <h3 className="text-white mb-2">{item.title}</h3>
+                  <h3 className="text-[#f8f7d2] mb-2">{item.title}</h3>
                   <p
-                    className="text-white/30"
+                    className="retro-muted"
                     style={{ fontSize: "0.85rem", lineHeight: "1.7" }}
                   >
                     {item.desc}
@@ -264,18 +264,18 @@ export default function LandingPage() {
             <div className="flex items-center justify-between mb-10">
               <div>
                 <h2
-                  className="text-white mb-2"
+                  className="text-[#8ef8f7] mb-2"
                   style={{ fontSize: "1.5rem" }}
                 >
                   Trending datasets
                 </h2>
-                <p className="text-white/25" style={{ fontSize: "0.85rem" }}>
+                <p className="retro-muted" style={{ fontSize: "0.85rem" }}>
                   Most popular this week
                 </p>
               </div>
               <Link
                 href="/marketplace"
-                className="flex items-center gap-1 text-[#a29bfe]/60 hover:text-[#a29bfe] transition-colors"
+                className="flex items-center gap-1 text-[#8ef8f7] hover:text-[#ffe066] transition-colors"
                 style={{ fontSize: "0.85rem" }}
               >
                 View all <ChevronRight className="w-4 h-4" />
@@ -293,23 +293,20 @@ export default function LandingPage() {
         <section className="relative py-32 px-6 lg:px-10">
           <GlowOrb color="purple" size="500px" top="-100px" left="30%" opacity={0.1} />
           <div className="max-w-4xl mx-auto text-center relative">
-            <div
-              className="p-12 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
-              style={{ backdropFilter: "blur(10px)" }}
-            >
+            <div className="p-12 retro-panel">
               <h2
-                className="text-white mb-4"
+                className="text-[#f8f7d2] mb-4"
                 style={{ fontSize: "1.8rem" }}
               >
                 Ready to monetize your data?
               </h2>
-              <p className="text-white/30 mb-8 max-w-md mx-auto">
+              <p className="retro-muted mb-8 max-w-md mx-auto">
                 Join thousands of data providers and AI agents trading on
                 TuskBazaar.
               </p>
               <Link
                 href="/upload"
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20"
+                className="inline-flex items-center gap-2 px-8 py-3.5 border-2 border-[#ffe066] bg-[#ff4d9e] text-[#0a1020] hover:bg-[#ffe066] transition-all duration-300"
               >
                 Start Uploading <ArrowRight className="w-4 h-4" />
               </Link>

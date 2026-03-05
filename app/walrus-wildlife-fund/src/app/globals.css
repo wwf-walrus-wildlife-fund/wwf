@@ -1,23 +1,24 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap");
 
 :root {
-  --background: #050510;
-  --foreground: #e8e8f0;
-  --card: rgba(15, 15, 35, 0.8);
-  --card-foreground: #e8e8f0;
-  --primary: #6C5CE7;
-  --primary-foreground: #ffffff;
-  --secondary: rgba(108, 92, 231, 0.1);
-  --secondary-foreground: #a29bfe;
-  --muted: rgba(255, 255, 255, 0.05);
-  --muted-foreground: #6b7094;
-  --accent: rgba(101, 200, 208, 0.15);
-  --accent-foreground: #C4B5FD;
-  --destructive: #ef4444;
-  --destructive-foreground: #ffffff;
-  --border: rgba(108, 92, 231, 0.15);
-  --input: rgba(255, 255, 255, 0.05);
-  --ring: rgba(108, 92, 231, 0.5);
+  --background: #0a1020;
+  --foreground: #f8f7d2;
+  --card: #131d36;
+  --card-foreground: #f8f7d2;
+  --primary: #ff4d9e;
+  --primary-foreground: #0a1020;
+  --secondary: #1d2950;
+  --secondary-foreground: #8ef8f7;
+  --muted: #17243f;
+  --muted-foreground: #85a3c7;
+  --accent: #8ef8f7;
+  --accent-foreground: #09131f;
+  --destructive: #ff455d;
+  --destructive-foreground: #fff8e7;
+  --border: #27365f;
+  --input: #111a31;
+  --ring: #ffe066;
 }
 
 @theme inline {
@@ -38,30 +39,188 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(0.75rem - 4px);
-  --radius-md: calc(0.75rem - 2px);
-  --radius-lg: 0.75rem;
-  --radius-xl: calc(0.75rem + 4px);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 }
 
 * {
   border-color: var(--color-border);
+  image-rendering: pixelated;
 }
 
 html {
-  font-size: 18px;
+  font-size: 17px;
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: "VT323", "Press Start 2P", "Courier New", monospace;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 10px rgba(142, 248, 247, 0.12);
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    )
+      0 0 / 100% 4px,
+    linear-gradient(90deg, rgba(142, 248, 247, 0.09) 1px, transparent 1px) 0 0 /
+      30px 30px,
+    linear-gradient(rgba(255, 77, 158, 0.1), rgba(142, 248, 247, 0.05)),
+    var(--background);
+}
+
+body::after {
+  background: radial-gradient(
+    circle at 15% 20%,
+    rgba(255, 224, 102, 0.1),
+    transparent 35%
+  );
+}
+
+h1,
+h2,
+h3 {
+  font-family: "Press Start 2P", "Courier New", monospace;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition: all 130ms steps(2, end);
+}
+
+button,
+a[class*="px-"],
+input,
+select,
+textarea {
+  border-radius: 0 !important;
+  border-width: 2px !important;
+}
+
+button,
+a[class*="px-"] {
+  box-shadow: 4px 4px 0 #000;
+}
+
+button:hover,
+a[class*="px-"]:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 #000;
+}
+
+button:active,
+a[class*="px-"]:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #000;
+}
+
+input,
+select,
+textarea {
+  background: var(--input) !important;
+  color: var(--foreground) !important;
+  border-color: #2f4a7a !important;
+  box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.06),
+    inset 2px 2px 0 rgba(0, 0, 0, 0.45);
+}
+
+th,
+td {
+  border-bottom: 1px solid rgba(142, 248, 247, 0.2);
+}
+
+.retro-shell {
+  position: relative;
+}
+
+.retro-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      45deg,
+      transparent 48%,
+      rgba(255, 77, 158, 0.08) 48%,
+      rgba(255, 77, 158, 0.08) 52%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      rgba(142, 248, 247, 0.06) 48%,
+      rgba(142, 248, 247, 0.06) 52%,
+      transparent 52%
+    );
+  background-size: 40px 40px;
+  mix-blend-mode: screen;
+  opacity: 0.28;
+}
+
+.retro-panel {
+  background: linear-gradient(180deg, #1b2a4f 0%, #111b33 100%) !important;
+  border: 2px solid #4d6cb3 !important;
+  box-shadow: 6px 6px 0 #000;
+  border-radius: 0 !important;
+}
+
+.retro-chip {
+  background: #1f2e55;
+  border: 2px solid #4a6eba;
+  color: #8ef8f7;
+  border-radius: 0;
+  padding: 0.2rem 0.55rem;
+}
+
+.retro-muted {
+  color: #85a3c7 !important;
+}
+
+.pixel-dots {
+  position: relative;
+}
+
+.pixel-dots::after {
+  content: "";
+  position: absolute;
+  right: 0.6rem;
+  top: 0.65rem;
+  width: 9px;
+  height: 9px;
+  background: #ffe066;
+  box-shadow: 11px 0 #ff4d9e, 22px 0 #8ef8f7;
 }
 
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

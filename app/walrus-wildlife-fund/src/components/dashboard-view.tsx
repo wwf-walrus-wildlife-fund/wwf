@@ -67,7 +67,7 @@ export function DashboardView({ address }: DashboardViewProps) {
     : "Manage your datasets and track performance.";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background retro-shell">
       <Navbar />
       <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="cyan" size="400px" top="0" left="-100px" opacity={0.04} />
@@ -78,10 +78,10 @@ export function DashboardView({ address }: DashboardViewProps) {
             animate={{ opacity: 1, y: 0 }}
             className="mb-10"
           >
-            <h1 className="text-white mb-2" style={{ fontSize: "2rem" }}>
+            <h1 className="text-[#8ef8f7] mb-2" style={{ fontSize: "2rem" }}>
               Dashboard
             </h1>
-            <p className="text-white/30 break-all">{subtitle}</p>
+            <p className="retro-muted break-all">{subtitle}</p>
           </motion.div>
 
           <FindUserForm initialAddress={address} />
@@ -99,17 +99,17 @@ export function DashboardView({ address }: DashboardViewProps) {
               return (
                 <div
                   key={stat.key}
-                  className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.03] transition-colors"
+                  className="p-5 retro-panel transition-colors"
                 >
                   <Icon className={`w-5 h-5 ${color} opacity-60 mb-3`} />
                   <p
-                    className="text-white mb-0.5"
+                    className="text-[#ffe066] mb-0.5"
                     style={{ fontSize: "1.5rem" }}
                   >
                     {stat.value}
                   </p>
                   <p
-                    className="text-white/20"
+                    className="text-[#85a3c7]"
                     style={{
                       fontSize: "0.75rem",
                       textTransform: "uppercase",
@@ -128,15 +128,15 @@ export function DashboardView({ address }: DashboardViewProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02] mb-8"
+            className="p-6 retro-panel mb-8"
           >
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-white/60">Earnings Overview</h3>
+              <h3 className="text-[#8ef8f7]">Earnings Overview</h3>
               <div className="flex gap-2">
                 {["7D", "30D", "90D"].map((range) => (
                   <button
                     key={range}
-                    className="px-3 py-1 rounded-md text-white/20 hover:text-white/40 hover:bg-white/5 transition-all"
+                    className="px-3 py-1 border-2 border-[#466aa8] text-[#8ef8f7] bg-[#1b2a4f] hover:text-[#ffe066] hover:border-[#ffe066] transition-all"
                     style={{ fontSize: "0.75rem" }}
                   >
                     {range}
@@ -150,7 +150,7 @@ export function DashboardView({ address }: DashboardViewProps) {
                 return (
                   <div
                     key={i}
-                    className="flex-1 rounded-t bg-gradient-to-t from-[#4834D4]/40 to-[#4834D4]/10 hover:from-[#6C5CE7]/50 hover:to-[#6C5CE7]/15 transition-colors cursor-pointer"
+                    className="flex-1 bg-gradient-to-t from-[#ff4d9e]/60 to-[#8ef8f7]/20 hover:from-[#ffe066]/60 hover:to-[#8ef8f7]/25 transition-colors cursor-pointer"
                     style={{ height: `${h}%` }}
                   />
                 );
@@ -171,13 +171,13 @@ export function DashboardView({ address }: DashboardViewProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="flex gap-1 mb-6 p-1 rounded-lg bg-white/[0.03] border border-white/[0.06] inline-flex">
+            <div className="flex gap-1 mb-6 p-1 border-2 border-[#466aa8] bg-[#1b2a4f] inline-flex">
               <button
                 onClick={() => setActiveTab("published")}
-                className={`px-5 py-2 rounded-md transition-all ${
+                className={`px-5 py-2 border-2 transition-all ${
                   activeTab === "published"
-                    ? "bg-[#4834D4]/15 text-[#C4B5FD]"
-                    : "text-white/30 hover:text-white/50"
+                    ? "bg-[#ff4d9e] text-[#0a1020] border-[#ffe066]"
+                    : "text-[#8ef8f7] bg-[#1b2a4f] border-[#466aa8] hover:text-[#ffe066] hover:border-[#ffe066]"
                 }`}
                 style={{ fontSize: "0.85rem" }}
               >
@@ -185,10 +185,10 @@ export function DashboardView({ address }: DashboardViewProps) {
               </button>
               <button
                 onClick={() => setActiveTab("purchased")}
-                className={`px-5 py-2 rounded-md transition-all ${
+                className={`px-5 py-2 border-2 transition-all ${
                   activeTab === "purchased"
-                    ? "bg-[#4834D4]/15 text-[#C4B5FD]"
-                    : "text-white/30 hover:text-white/50"
+                    ? "bg-[#ff4d9e] text-[#0a1020] border-[#ffe066]"
+                    : "text-[#8ef8f7] bg-[#1b2a4f] border-[#466aa8] hover:text-[#ffe066] hover:border-[#ffe066]"
                 }`}
                 style={{ fontSize: "0.85rem" }}
               >
@@ -197,7 +197,7 @@ export function DashboardView({ address }: DashboardViewProps) {
             </div>
 
             {/* Table */}
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+            <div className="retro-panel overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>

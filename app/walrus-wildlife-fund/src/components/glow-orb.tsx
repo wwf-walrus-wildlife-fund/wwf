@@ -28,7 +28,7 @@ export function GlowOrb({
 
   return (
     <div
-      className="absolute rounded-full blur-3xl pointer-events-none"
+      className="absolute pointer-events-none"
       style={{
         width: size,
         height: size,
@@ -36,7 +36,11 @@ export function GlowOrb({
         left,
         right,
         bottom,
-        background: `radial-gradient(circle, rgba(${rgb}, ${opacity}) 0%, transparent 70%)`,
+        background: `repeating-linear-gradient(0deg, rgba(${rgb}, ${opacity}) 0 16px, transparent 16px 32px),
+          repeating-linear-gradient(90deg, rgba(${rgb}, ${opacity * 0.8}) 0 16px, transparent 16px 32px)`,
+        clipPath:
+          "polygon(0 14%, 14% 14%, 14% 0, 43% 0, 43% 14%, 71% 14%, 71% 29%, 100% 29%, 100% 57%, 86% 57%, 86% 86%, 57% 86%, 57% 100%, 29% 100%, 29% 86%, 0 86%)",
+        filter: "drop-shadow(0 0 18px rgba(0,0,0,0.45))",
       }}
     />
   );

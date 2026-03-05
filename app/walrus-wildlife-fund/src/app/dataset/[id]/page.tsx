@@ -52,7 +52,7 @@ export default function DatasetDetailPage({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background retro-shell">
         <Navbar />
         <div className="min-h-screen flex items-center justify-center pt-16">
           <div className="text-center">
@@ -66,7 +66,7 @@ export default function DatasetDetailPage({
 
   if (!dataset) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background retro-shell">
         <Navbar />
         <div className="min-h-screen flex items-center justify-center pt-16">
           <div className="text-center">
@@ -141,7 +141,7 @@ export default function DatasetDetailPage({
   const blobId = dataset.blob_ids?.[0];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background retro-shell">
       <Navbar />
       <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="indigo" size="400px" top="0" right="0" opacity={0.05} />
@@ -150,7 +150,7 @@ export default function DatasetDetailPage({
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Link
               href="/marketplace"
-              className="inline-flex items-center gap-2 text-white/30 hover:text-white/50 transition-colors mb-8"
+              className="inline-flex items-center gap-2 text-[#8ef8f7] hover:text-[#ffe066] transition-colors mb-8"
               style={{ fontSize: "0.85rem" }}
             >
               <ArrowLeft className="w-4 h-4" /> Back to Marketplace
@@ -159,7 +159,7 @@ export default function DatasetDetailPage({
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Main */}
               <div className="lg:col-span-2 space-y-6">
-                <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                <div className="p-6 retro-panel">
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h1
@@ -170,7 +170,7 @@ export default function DatasetDetailPage({
                       </h1>
                       <div className="flex items-center gap-3">
                         <span
-                          className="px-2.5 py-1 rounded-md bg-[#4834D4]/15 text-[#C4B5FD] border border-[#4834D4]/25"
+                          className="px-2.5 py-1 border-2 bg-[#ff4d9e] text-[#0a1020] border-[#ffe066]"
                           style={{ fontSize: "0.7rem" }}
                         >
                           {dataset.category}
@@ -256,7 +256,7 @@ export default function DatasetDetailPage({
                 </div>
 
                 {/* Seller info */}
-                <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                <div className="p-6 retro-panel">
                   <h3
                     className="text-white/60 mb-4"
                     style={{ fontSize: "0.9rem" }}
@@ -300,7 +300,7 @@ export default function DatasetDetailPage({
 
                 {/* Blob ID */}
                 {blobId && (
-                  <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                  <div className="p-6 retro-panel">
                     <h3
                       className="text-white/60 mb-4"
                       style={{ fontSize: "0.9rem" }}
@@ -346,7 +346,7 @@ export default function DatasetDetailPage({
 
               {/* Sidebar - Purchase / Decrypt */}
               <div className="space-y-4">
-                <div className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02] sticky top-24">
+                <div className="p-6 retro-panel sticky top-24">
                   {isChecking ? (
                     <div className="flex flex-col items-center py-8">
                       <Loader2 className="w-6 h-6 text-[#a29bfe] animate-spin mb-3" />
@@ -475,7 +475,7 @@ export default function DatasetDetailPage({
                       <button
                         onClick={handleBuy}
                         disabled={isBuying}
-                        className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-4 border-2 border-[#ffe066] bg-[#ff4d9e] text-[#0a1020] hover:bg-[#ffe066] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {isBuying ? (
                           <>

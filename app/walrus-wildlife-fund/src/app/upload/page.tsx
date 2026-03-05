@@ -87,7 +87,7 @@ export default function UploadPage() {
     const txDigest = result?.txDigest;
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background retro-shell">
         <Navbar />
         <div className="relative min-h-screen flex items-center justify-center pt-16 px-6 lg:px-10">
           <GlowOrb color="emerald" size="400px" top="30%" left="30%" opacity={0.08} />
@@ -96,13 +96,13 @@ export default function UploadPage() {
             animate={{ scale: 1, opacity: 1 }}
             className="text-center max-w-md"
           >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#65C8D0] flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <div className="w-20 h-20 mx-auto mb-6 border-2 border-black bg-gradient-to-br from-emerald-500 to-[#8ef8f7] flex items-center justify-center shadow-[6px_6px_0_#000]">
               <CheckCircle2 className="w-10 h-10 text-white" />
             </div>
-            <h2 className="text-white mb-3" style={{ fontSize: "1.5rem" }}>
+            <h2 className="text-[#8ef8f7] mb-3" style={{ fontSize: "1.5rem" }}>
               Dataset Published
             </h2>
-            <p className="text-white/35 mb-2">
+            <p className="retro-muted mb-2">
               {files.length === 1
                 ? "Your file has been encrypted and stored on Walrus"
                 : `${files.length} files have been encrypted and stored on Walrus`}{" "}
@@ -149,13 +149,13 @@ export default function UploadPage() {
                   setName("");
                   setDescription("");
                 }}
-                className="px-6 py-3 rounded-xl bg-white/[0.05] border border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+                className="px-6 py-3 border-2 border-[#466aa8] bg-[#1b2a4f] text-[#8ef8f7] hover:text-[#ffe066] hover:border-[#ffe066] transition-all"
               >
                 Upload Another
               </button>
               <Link
                 href="/marketplace"
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all shadow-lg shadow-[#4834D4]/20"
+                className="px-6 py-3 border-2 border-[#ffe066] bg-[#ff4d9e] text-[#0a1020] hover:bg-[#ffe066] transition-all"
               >
                 View Marketplace
               </Link>
@@ -167,7 +167,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background retro-shell">
       <Navbar />
       <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="purple" size="400px" top="0" left="-100px" opacity={0.06} />
@@ -178,10 +178,10 @@ export default function UploadPage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-10"
           >
-            <h1 className="text-white mb-2" style={{ fontSize: "2rem" }}>
+            <h1 className="text-[#8ef8f7] mb-2" style={{ fontSize: "2rem" }}>
               Upload Data
             </h1>
-            <p className="text-white/30">
+            <p className="retro-muted">
               Monetize your datasets on the decentralized marketplace.
             </p>
           </motion.div>
@@ -204,10 +204,10 @@ export default function UploadPage() {
                 }}
                 onDragLeave={() => setDragOver(false)}
                 onDrop={handleDrop}
-                className={`relative rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 cursor-pointer ${
+                className={`relative border-2 border-dashed p-12 text-center transition-all duration-300 cursor-pointer ${
                   dragOver
-                    ? "border-[#6C5CE7]/50 bg-[#6C5CE7]/5"
-                    : "border-white/[0.08] bg-white/[0.01] hover:border-white/[0.15] hover:bg-white/[0.02]"
+                    ? "border-[#ffe066] bg-[#ff4d9e]/15"
+                    : "border-[#466aa8] bg-[#152346] hover:border-[#8ef8f7] hover:bg-[#1b2a4f]"
                 }`}
                 onClick={() => document.getElementById("file-input")?.click()}
               >
@@ -300,7 +300,7 @@ export default function UploadPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
-              className="space-y-4 p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]"
+              className="space-y-4 p-6 retro-panel"
             >
               <h3 className="text-white/80 mb-4">Dataset Information</h3>
 
@@ -369,7 +369,7 @@ export default function UploadPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]"
+              className="p-6 retro-panel"
             >
               <div className="flex items-center gap-2 mb-4">
                 <Clock className="w-4 h-4 text-[#a29bfe]/60" />
@@ -425,7 +425,7 @@ export default function UploadPage() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="p-6 rounded-xl border border-white/[0.06] bg-white/[0.02]"
+              className="p-6 retro-panel"
             >
               <div className="flex items-center gap-2 mb-4">
                 <Database className="w-4 h-4 text-[#a29bfe]/60" />
@@ -466,7 +466,7 @@ export default function UploadPage() {
               <button
                 onClick={handleSubmit}
                 disabled={files.length === 0 || !name || isUploading}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-4 border-2 border-[#ffe066] bg-[#ff4d9e] text-[#0a1020] hover:bg-[#ffe066] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isUploading ? (
                   <>

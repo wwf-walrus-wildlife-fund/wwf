@@ -26,7 +26,7 @@ export default function MarketplacePage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background retro-shell">
       <Navbar />
       <div className="relative min-h-screen pt-24 pb-16 px-6 lg:px-10">
         <GlowOrb color="indigo" size="400px" top="0" right="-100px" opacity={0.06} />
@@ -37,10 +37,10 @@ export default function MarketplacePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-10"
           >
-            <h1 className="text-white mb-2" style={{ fontSize: "2rem" }}>
+            <h1 className="text-[#8ef8f7] mb-2" style={{ fontSize: "2rem" }}>
               Marketplace
             </h1>
-            <p className="text-white/30">
+            <p className="retro-muted">
               Browse and buy data from verified providers.
             </p>
           </motion.div>
@@ -59,14 +59,14 @@ export default function MarketplacePage() {
                   placeholder="Search datasets, tags, or providers..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder:text-white/20 focus:outline-none focus:border-[#6C5CE7]/30 focus:bg-white/[0.05] transition-all"
+                  className="w-full pl-11 pr-4 py-3 retro-panel text-[#f8f7d2] placeholder:text-[#85a3c7] focus:outline-none"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white/60 focus:outline-none focus:border-[#6C5CE7]/30 appearance-none cursor-pointer"
+                  className="px-4 py-3 retro-panel text-[#8ef8f7] focus:outline-none appearance-none cursor-pointer"
                   style={{ fontSize: "0.85rem" }}
                 >
                   <option value="popular">Most Popular</option>
@@ -74,13 +74,13 @@ export default function MarketplacePage() {
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                 </select>
-                <div className="hidden sm:flex items-center rounded-xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+                <div className="hidden sm:flex items-center border-2 border-[#4d6cb3] bg-[#1b2a4f] overflow-hidden">
                   <button
                     onClick={() => setViewMode("grid")}
                     className={`p-3 transition-colors ${
                       viewMode === "grid"
-                        ? "text-[#C4B5FD] bg-[#4834D4]/10"
-                        : "text-white/30 hover:text-white/50"
+                        ? "text-[#0a1020] bg-[#ffe066]"
+                        : "text-[#8ef8f7] hover:text-[#ffe066]"
                     }`}
                   >
                     <Grid3X3 className="w-4 h-4" />
@@ -89,8 +89,8 @@ export default function MarketplacePage() {
                     onClick={() => setViewMode("list")}
                     className={`p-3 transition-colors ${
                       viewMode === "list"
-                        ? "text-[#C4B5FD] bg-[#4834D4]/10"
-                        : "text-white/30 hover:text-white/50"
+                        ? "text-[#0a1020] bg-[#ffe066]"
+                        : "text-[#8ef8f7] hover:text-[#ffe066]"
                     }`}
                   >
                     <List className="w-4 h-4" />
@@ -104,10 +104,10 @@ export default function MarketplacePage() {
                 <button
                   key={cat}
                   onClick={() => setActiveCategory(cat)}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-all duration-200 ${
+                  className={`px-4 py-2 border-2 whitespace-nowrap transition-all duration-200 ${
                     activeCategory === cat
-                      ? "bg-[#4834D4]/15 text-[#C4B5FD] border border-[#4834D4]/25"
-                      : "bg-white/[0.03] text-white/30 border border-white/[0.05] hover:bg-white/[0.06] hover:text-white/50"
+                      ? "bg-[#ff4d9e] text-[#0a1020] border-[#ffe066]"
+                      : "bg-[#1b2a4f] text-[#8ef8f7] border-[#466aa8] hover:border-[#ffe066] hover:text-[#ffe066]"
                   }`}
                   style={{ fontSize: "0.8rem" }}
                 >
@@ -117,7 +117,7 @@ export default function MarketplacePage() {
             </div>
           </motion.div>
 
-          <div className="mb-6 text-white/20" style={{ fontSize: "0.8rem" }}>
+          <div className="mb-6 text-[#85a3c7]" style={{ fontSize: "0.9rem" }}>
             {filteredDatasets.length} dataset
             {filteredDatasets.length !== 1 ? "s" : ""} found
           </div>
