@@ -125,18 +125,42 @@ export async function createSessionKey(
 }
 
 // ============================================================
-// Decryption
+// Envelope Encryption — DEK helpers
 // ============================================================
+
+/**
+ * Seal-encrypt a DEK (32 bytes) for a given dataset identity.
+ * Returns the Seal-encrypted envelope bytes to store on-chain.
+ */
+export async function encryptDEK(
+    suiClient: AnySuiClient,
+    datasetObjectId: string,
+    envelopeVersion: number,
+    dek: Uint8Array,
+): Promise<Uint8Array> {
+    const sealClient = getSealClient(suiClient);
+    const sealId = buildSealId(datasetObjectId, envelopeVersion);
+    const packageId = process.env.NEXT_PUBLIC_PACKAGE_ID!;
+
+    const { encryptedObject } = await sealClient.encrypt({
+        threshold: SEAL_THRESHOLD,
+        packageId,
+        id: sealId,
+        data: dek,
+    });
+
+    return encryptedObject as Uint8Array;
+}
 
 /**
  * Build the PTB for Seal decryption (key servers dry-run this to verify access).
  */
 export async function buildDecryptionTx(
-    serviceObjectId: string,
-    postId: string | number,
-    suiClient: AnySuiClient
+    datasetObjectId: string,
+    envelopeVersion: string | number,
+    suiClient: AnySuiClient,
 ): Promise<Uint8Array> {
-    const idHex = buildSealId(serviceObjectId, postId);
+    const idHex = buildSealId(datasetObjectId, envelopeVersion);
     const idBytes = hexToBytes(idHex);
 
     const tx = new Transaction();
@@ -144,7 +168,7 @@ export async function buildDecryptionTx(
         target: `${process.env.NEXT_PUBLIC_PACKAGE_ID!}::seal_approve_reader::seal_approve_reader`,
         arguments: [
             tx.pure.vector("u8", idBytes),
-            tx.object(serviceObjectId),
+            tx.object(datasetObjectId),
         ],
     });
 
@@ -157,14 +181,42 @@ export async function buildDecryptionTx(
 }
 
 /**
- * Decrypt content using Seal.
+ * Seal-decrypt the DEK from the on-chain envelope.
+ * Returns the raw 32-byte AES key.
+ */
+export async function decryptDEK(
+    suiClient: AnySuiClient,
+    encryptedKey: Uint8Array,
+    datasetObjectId: string,
+    envelopeVersion: string | number,
+    sessionKey: SessionKey,
+): Promise<Uint8Array> {
+    const sealClient = getSealClient(suiClient);
+    const txBytes = await buildDecryptionTx(datasetObjectId, envelopeVersion, suiClient);
+
+    const dek = await sealClient.decrypt({
+        data: encryptedKey,
+        sessionKey,
+        txBytes,
+    });
+
+    return dek as Uint8Array;
+}
+
+// ============================================================
+// Legacy — Seal-decrypt full blob (backward compat)
+// ============================================================
+
+/**
+ * @deprecated Use `decryptDEK` + AES-GCM for new datasets.
+ * Kept for datasets created before envelope encryption migration.
  */
 export async function decryptContent(
     suiClient: AnySuiClient,
     encryptedData: Uint8Array,
     serviceObjectId: string,
     postId: string | number,
-    sessionKey: SessionKey
+    sessionKey: SessionKey,
 ): Promise<Uint8Array> {
     const sealClient = getSealClient(suiClient);
     const txBytes = await buildDecryptionTx(serviceObjectId, postId, suiClient);

@@ -16,10 +16,13 @@ import {
   Lock,
   Unlock,
   FileIcon,
+  FileText,
   Dog,
   ExternalLink,
+  Files,
 } from "lucide-react";
 import { motion } from "motion/react";
+import { zipSync } from "fflate";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -43,7 +46,7 @@ export default function DatasetDetailPage({
     buyError,
     decrypt,
     isDecrypting,
-    decryptedData,
+    decryptedFiles,
     decryptError,
   } = useDataset(id);
   const [copied, setCopied] = useState(false);
@@ -91,28 +94,44 @@ export default function DatasetDetailPage({
   };
 
   const handleDecrypt = async () => {
-    const result = await decrypt();
-    if (!result) return;
-    const text = await result.text();
-    const txtBlob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(txtBlob);
+    await decrypt();
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${dataset.name.replace(/\s+/g, "_")}.txt`;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
   };
 
-  const handleDownload = () => {
-    if (!decryptedData) return;
-    const url = URL.createObjectURL(decryptedData);
-    const a = document.createElement("a");
-    a.href = url;
-    const safeName = dataset.name.replace(/\s+/g, "_");
-    a.download = safeName.includes(".") ? safeName : `${safeName}.bin`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleDownloadSingle = (file: { name: string; data: Blob }) => {
+    triggerDownload(file.data, file.name);
   };
+
+  const handleDownloadAll = async () => {
+    if (!decryptedFiles || decryptedFiles.length === 0) return;
+
+    const entries: Record<string, Uint8Array> = {};
+    for (const file of decryptedFiles) {
+      const buf = await file.data.arrayBuffer();
+      entries[file.name] = new Uint8Array(buf);
+    }
+    const zipped = zipSync(entries);
+    const safeName = dataset.name.replace(/\s+/g, "_").replace(/[^\w.-]/g, "");
+    const ab = new ArrayBuffer(zipped.byteLength);
+    new Uint8Array(ab).set(zipped);
+    triggerDownload(new Blob([ab], { type: "application/zip" }), `${safeName}.zip`);
+  };
+
+  function formatFileSize(bytes: number) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -320,13 +339,48 @@ export default function DatasetDetailPage({
                         </p>
                       </div>
 
-                      {decryptedData ? (
-                        <button
-                          onClick={handleDownload}
-                          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10"
-                        >
-                          <Download className="w-4 h-4" /> Download Data
-                        </button>
+                      {decryptedFiles && decryptedFiles.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Files className="w-4 h-4 text-emerald-400/60" />
+                            <span className="text-emerald-300/80" style={{ fontSize: "0.8rem" }}>
+                              {decryptedFiles.length} file{decryptedFiles.length !== 1 && "s"} decrypted
+                            </span>
+                          </div>
+
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            {decryptedFiles.map((file, i) => (
+                              <div
+                                key={file.name + i}
+                                className="flex items-center gap-2 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.06] group"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-emerald-400/50 shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white/60 truncate" style={{ fontSize: "0.8rem" }}>
+                                    {file.name}
+                                  </p>
+                                  <p className="text-white/20" style={{ fontSize: "0.65rem" }}>
+                                    {formatFileSize(file.data.size)}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => handleDownloadSingle(file)}
+                                  className="p-1.5 rounded-md text-white/30 hover:text-emerald-400 hover:bg-white/5 transition-all"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            onClick={handleDownloadAll}
+                            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-400 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/10"
+                          >
+                            <Download className="w-4 h-4" />
+                            Download as .zip ({decryptedFiles.length} file{decryptedFiles.length !== 1 && "s"})
+                          </button>
+                        </div>
                       ) : (
                         <button
                           onClick={handleDecrypt}

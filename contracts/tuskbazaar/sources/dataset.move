@@ -23,6 +23,8 @@ public struct Dataset has key {
     derivation_id: ID,
     envelope: Envelope,
     blob_ids: VecSet<String>, // u256 really, but easier to parse from explorers etc.
+    /// JSON manifest: file names, sizes, mimeTypes, storageType (blobs | quilt).
+    file_manifest: String,
     price_sui: u64,
     funds_receiver: address,
 }
@@ -45,6 +47,7 @@ public fun new_derived(
     project_url: String,
     envelope: vector<u8>,
     blob_ids: vector<String>,
+    file_manifest: String,
     price_sui: u64,
     funds_receiver: address,
     ctx: &TxContext,
@@ -69,6 +72,7 @@ public fun new_derived(
         derivation_id,
         envelope: Envelope { encrypted_key: envelope, version: 0 },
         blob_ids: vec_set::from_keys(blob_ids),
+        file_manifest,
         price_sui,
         funds_receiver,
     }

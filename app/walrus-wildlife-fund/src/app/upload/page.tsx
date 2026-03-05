@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   Loader2,
   Database,
+  Files,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
@@ -28,7 +29,7 @@ function formatSize(bytes: number) {
 }
 
 export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [storageDays, setStorageDays] = useState(30);
   const [price, setPrice] = useState("10");
@@ -38,26 +39,43 @@ export default function UploadPage() {
 
   const { upload, isUploading, isSuccess, error, reset } = useUpload();
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOver(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) setFile(dropped);
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const arr = Array.from(incoming);
+    setFiles((prev) => {
+      const existingNames = new Set(prev.map((f) => f.name + f.size));
+      const unique = arr.filter((f) => !existingNames.has(f.name + f.size));
+      return [...prev, ...unique];
+    });
   }, []);
 
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+    },
+    [addFiles],
+  );
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(e.target.files);
+      e.target.value = "";
     }
   };
 
-  const removeFile = () => setFile(null);
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
+  const clearFiles = () => setFiles([]);
+
+  const totalSize = files.reduce((s, f) => s + f.size, 0);
   const storageCost = ((storageDays / 30) * 0.5).toFixed(2);
 
   const handleSubmit = () => {
-    if (!file || !name) return;
-    upload({ file, name, description, category, price, storageDays });
+    if (files.length === 0 || !name) return;
+    upload({ files, name, description, category, price, storageDays });
   };
 
   if (isSuccess) {
@@ -78,8 +96,10 @@ export default function UploadPage() {
               Dataset Published
             </h2>
             <p className="text-white/35 mb-2">
-              Your data has been encrypted and stored on Walrus for{" "}
-              {storageDays} days.
+              {files.length === 1
+                ? "Your file has been encrypted and stored on Walrus"
+                : `${files.length} files have been encrypted and stored on Walrus`}{" "}
+              for {storageDays} days.
             </p>
             <p className="text-white/20 mb-8" style={{ fontSize: "0.8rem" }}>
               Transaction sponsored &middot; 0 SUI gas fee
@@ -88,7 +108,7 @@ export default function UploadPage() {
               <button
                 onClick={() => {
                   reset();
-                  setFile(null);
+                  clearFiles();
                   setName("");
                   setDescription("");
                 }}
@@ -157,6 +177,7 @@ export default function UploadPage() {
                 <input
                   id="file-input"
                   type="file"
+                  multiple
                   className="hidden"
                   onChange={handleFileSelect}
                 />
@@ -166,46 +187,72 @@ export default function UploadPage() {
                   }`}
                 />
                 <p className="text-white/40 mb-1">
-                  Drop a file here or{" "}
+                  Drop files here or{" "}
                   <span className="text-[#a29bfe] cursor-pointer">browse</span>
                 </p>
                 <p className="text-white/15" style={{ fontSize: "0.75rem" }}>
-                  CSV, JSON, JSONL, Parquet, or any file type
+                  CSV, JSON, JSONL, Parquet, or any file type &middot; Multiple files supported
                 </p>
               </div>
             </motion.div>
 
-            {/* File */}
+            {/* File list */}
             <AnimatePresence>
-              {file && (
+              {files.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
+                  className="overflow-hidden space-y-2"
                 >
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                    <FileText className="w-4 h-4 text-indigo-400/60 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="text-white/70 truncate"
-                        style={{ fontSize: "0.85rem" }}
-                      >
-                        {file.name}
-                      </p>
-                      <p
-                        className="text-white/20"
-                        style={{ fontSize: "0.7rem" }}
-                      >
-                        {formatSize(file.size)}
-                      </p>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Files className="w-4 h-4 text-white/20" />
+                      <span className="text-white/40" style={{ fontSize: "0.8rem" }}>
+                        {files.length} file{files.length !== 1 && "s"} &middot; {formatSize(totalSize)}
+                      </span>
                     </div>
                     <button
-                      onClick={removeFile}
-                      className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/5 transition-all"
+                      onClick={clearFiles}
+                      className="text-white/20 hover:text-white/50 transition-colors"
+                      style={{ fontSize: "0.75rem" }}
                     >
-                      <X className="w-4 h-4" />
+                      Clear all
                     </button>
+                  </div>
+
+                  <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
+                    {files.map((file, i) => (
+                      <div
+                        key={file.name + file.size + i}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.06]"
+                      >
+                        <FileText className="w-4 h-4 text-indigo-400/60 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="text-white/70 truncate"
+                            style={{ fontSize: "0.85rem" }}
+                          >
+                            {file.name}
+                          </p>
+                          <p
+                            className="text-white/20"
+                            style={{ fontSize: "0.7rem" }}
+                          >
+                            {formatSize(file.size)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeFile(i);
+                          }}
+                          className="p-1 rounded text-white/20 hover:text-white/50 hover:bg-white/5 transition-all"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </motion.div>
               )}
@@ -381,18 +428,18 @@ export default function UploadPage() {
             >
               <button
                 onClick={handleSubmit}
-                disabled={!file || !name || isUploading}
+                disabled={files.length === 0 || !name || isUploading}
                 className="w-full py-4 rounded-xl bg-gradient-to-r from-[#4834D4] to-[#6C5CE7] text-white hover:from-[#6C5CE7] hover:to-[#A29BFE] transition-all duration-300 shadow-lg shadow-[#4834D4]/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isUploading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    Encrypting & Uploading to Walrus...
+                    Encrypting & Uploading {files.length} file{files.length !== 1 && "s"}...
                   </>
                 ) : (
                   <>
                     <Upload className="w-5 h-5" />
-                    Publish Dataset
+                    Publish Dataset ({files.length} file{files.length !== 1 && "s"})
                   </>
                 )}
               </button>

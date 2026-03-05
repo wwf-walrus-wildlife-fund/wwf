@@ -8,10 +8,30 @@ import { Transaction } from "@mysten/sui/transactions";
 import { bcs } from "@mysten/sui/bcs";
 import { deriveObjectID, normalizeSuiAddress } from "@mysten/sui/utils";
 import type { SessionKey } from "@mysten/seal";
-import type { Dataset } from "@/lib/types";
-import { extractFields, toUiDataset, canRead } from "@/lib/sui-helpers";
-import { createSessionKey, decryptContent } from "@/lib/seal";
-import { downloadFromWalrus } from "@/lib/walrus";
+import type { Dataset, DecryptedFile } from "@/lib/types";
+import { extractFields, toUiDataset, canRead, isEnvelopeEncrypted } from "@/lib/sui-helpers";
+import { createSessionKey, decryptDEK, decryptContent } from "@/lib/seal";
+import { downloadFromWalrus, downloadMultipleFromWalrus } from "@/lib/walrus";
+import { decryptFile } from "@/lib/crypto";
+import { sliceQuiltPatch } from "@/lib/quilt";
+import { fromBase64 } from "@mysten/sui/utils";
+
+function toArrayBuffer(u8: Uint8Array): ArrayBuffer {
+  return u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength) as ArrayBuffer;
+}
+
+function parseVectorU8(raw: unknown): Uint8Array {
+  if (raw instanceof Uint8Array) return raw;
+  if (Array.isArray(raw)) return new Uint8Array(raw);
+  if (typeof raw === "string" && raw.length > 0) {
+    if (raw.startsWith("0x")) {
+      return new Uint8Array(raw.slice(2).match(/.{1,2}/g)!.map((b) => parseInt(b, 16)));
+    }
+    // SUI JSON serialization returns vector<u8> as base64
+    return fromBase64(raw);
+  }
+  throw new Error("Cannot parse vector<u8> field");
+}
 
 interface UseDatasetReturn {
   dataset: Dataset | null;
@@ -22,9 +42,9 @@ interface UseDatasetReturn {
   buy: () => Promise<boolean>;
   isBuying: boolean;
   buyError: string | null;
-  decrypt: () => Promise<Blob | null>;
+  decrypt: () => Promise<DecryptedFile[] | null>;
   isDecrypting: boolean;
-  decryptedData: Blob | null;
+  decryptedFiles: DecryptedFile[] | null;
   decryptError: string | null;
   resetDecrypt: () => void;
 }
@@ -44,7 +64,7 @@ export function useDataset(id: string): UseDatasetReturn {
   const [buyError, setBuyError] = useState<string | null>(null);
 
   const [isDecrypting, setIsDecrypting] = useState(false);
-  const [decryptedData, setDecryptedData] = useState<Blob | null>(null);
+  const [decryptedFiles, setDecryptedFiles] = useState<DecryptedFile[] | null>(null);
   const [decryptError, setDecryptError] = useState<string | null>(null);
 
   // ── Fetch dataset object ──────────────────────────────────
@@ -159,7 +179,7 @@ export function useDataset(id: string): UseDatasetReturn {
     }
   }, [client, currentAccount, id, signAndExecuteTransaction]);
 
-  // ── Decrypt ───────────────────────────────────────────────
+  // ── Session key helper ────────────────────────────────────
   const createSignedSessionKey = useCallback(async (): Promise<SessionKey> => {
     if (!currentAccount) throw new Error("No wallet connected");
     const sessionKey = await createSessionKey(
@@ -182,7 +202,8 @@ export function useDataset(id: string): UseDatasetReturn {
     return sessionKey;
   }, [client, currentAccount, signPersonalMessage]);
 
-  const decrypt = useCallback(async (): Promise<Blob | null> => {
+  // ── Decrypt (envelope or legacy) ──────────────────────────
+  const decrypt = useCallback(async (): Promise<DecryptedFile[] | null> => {
     setIsDecrypting(true);
     setDecryptError(null);
     try {
@@ -201,17 +222,74 @@ export function useDataset(id: string): UseDatasetReturn {
       const version = Number(fields?.envelope?.version ?? 0);
       if (!Number.isFinite(version)) throw new Error("Invalid envelope version on dataset");
 
-      const encryptedBlob = await downloadFromWalrus(blobIds[0]);
       const sessionKey = await createSignedSessionKey();
-      const plaintext = await decryptContent(client, encryptedBlob, id, version, sessionKey);
 
-      const plaintextBuffer = plaintext.buffer.slice(
-        plaintext.byteOffset,
-        plaintext.byteOffset + plaintext.byteLength,
-      ) as ArrayBuffer;
-      const blob = new Blob([plaintextBuffer], { type: "application/octet-stream" });
-      setDecryptedData(blob);
-      return blob;
+      // Detect envelope encryption vs legacy
+      const dsSnapshot = dataset ? { ...dataset, ...toUiDataset(id, fields) } : toUiDataset(id, fields);
+
+      if (isEnvelopeEncrypted(dsSnapshot)) {
+        // ── Envelope encryption path ──
+        // 1. Extract Seal-encrypted DEK from on-chain envelope
+        const encryptedKeyRaw = fields.envelope?.encrypted_key ?? fields.envelope?.fields?.encrypted_key;
+        const encryptedKey = parseVectorU8(encryptedKeyRaw);
+
+        // 2. Seal-decrypt the DEK
+        const dek = await decryptDEK(client, encryptedKey, id, version, sessionKey);
+
+        // 3. Fetch encrypted blob(s)
+        const manifest = dsSnapshot.fileManifest;
+
+        if (manifest?.storageType === "quilt") {
+          // Quilt path: single blob, slice by manifest offsets
+          const quiltBlob = await downloadFromWalrus(blobIds[0]);
+          const files: DecryptedFile[] = await Promise.all(
+            manifest.files.map(async (entry) => {
+              const patch = sliceQuiltPatch(quiltBlob, entry.patchOffset!, entry.patchOffset! + entry.patchLength!);
+              const plaintext = await decryptFile(dek, patch);
+              return {
+                name: entry.name,
+                mimeType: entry.mimeType,
+                data: new Blob([toArrayBuffer(plaintext)], { type: entry.mimeType }),
+              };
+            }),
+          );
+          setDecryptedFiles(files);
+          return files;
+        } else {
+          // Blobs path: one blob per file
+          const encryptedBlobs = await downloadMultipleFromWalrus(blobIds);
+          const files: DecryptedFile[] = await Promise.all(
+            encryptedBlobs.map(async (encBlob, i) => {
+              const plaintext = await decryptFile(dek, encBlob);
+              const entry = manifest?.files[i];
+              const mime = entry?.mimeType ?? "application/octet-stream";
+              return {
+                name: entry?.name ?? `file_${i}`,
+                mimeType: mime,
+                data: new Blob([toArrayBuffer(plaintext)], { type: mime }),
+              };
+            }),
+          );
+          setDecryptedFiles(files);
+          return files;
+        }
+      } else {
+        // ── Legacy path: Seal-encrypted blob (backward compat) ──
+        const encryptedBlob = await downloadFromWalrus(blobIds[0]);
+        const plaintext = await decryptContent(client, encryptedBlob, id, version, sessionKey);
+
+        const plaintextBuffer = plaintext.buffer.slice(
+          plaintext.byteOffset,
+          plaintext.byteOffset + plaintext.byteLength,
+        ) as ArrayBuffer;
+        const file: DecryptedFile = {
+          name: dataset?.name ?? "dataset",
+          mimeType: "application/octet-stream",
+          data: new Blob([plaintextBuffer], { type: "application/octet-stream" }),
+        };
+        setDecryptedFiles([file]);
+        return [file];
+      }
     } catch (err) {
       const rawMessage = err instanceof Error ? err.message : "Decryption failed";
       const message = rawMessage.includes("Not enough shares")
@@ -222,11 +300,11 @@ export function useDataset(id: string): UseDatasetReturn {
     } finally {
       setIsDecrypting(false);
     }
-  }, [client, createSignedSessionKey, currentAccount?.address, dataset?.blob_ids, id]);
+  }, [client, createSignedSessionKey, currentAccount?.address, dataset, id]);
 
   const resetDecrypt = useCallback(() => {
     setIsDecrypting(false);
-    setDecryptedData(null);
+    setDecryptedFiles(null);
     setDecryptError(null);
   }, []);
 
@@ -241,7 +319,7 @@ export function useDataset(id: string): UseDatasetReturn {
     buyError,
     decrypt,
     isDecrypting,
-    decryptedData,
+    decryptedFiles,
     decryptError,
     resetDecrypt,
   };

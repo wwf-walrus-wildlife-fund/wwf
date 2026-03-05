@@ -47,9 +47,10 @@ export interface WalrusBlobQueryResult {
     contentLength: string | null;
 }
 
+const DEFAULT_CONCURRENCY = 4;
+
 /**
- * Upload encrypted data to Walrus.
- * The data should already be encrypted with Seal before uploading.
+ * Upload encrypted data to Walrus as a single blob.
  */
 export async function uploadToWalrus(
     data: Uint8Array,
@@ -109,9 +110,39 @@ export async function uploadToWalrus(
     throw new Error("Unexpected Walrus response format");
 }
 
+export interface MultiUploadEntry {
+    data: Uint8Array;
+    label?: string;
+}
+
+/**
+ * Upload multiple blobs in parallel with a concurrency limit.
+ * Returns blob IDs in the same order as the input array.
+ */
+export async function uploadMultipleToWalrus(
+    entries: MultiUploadEntry[],
+    userAddress: string,
+    epochs: number = WALRUS_EPOCHS,
+    concurrency: number = DEFAULT_CONCURRENCY,
+): Promise<WalrusUploadResponse[]> {
+    const results: WalrusUploadResponse[] = new Array(entries.length);
+    let cursor = 0;
+
+    async function next(): Promise<void> {
+        while (cursor < entries.length) {
+            const idx = cursor++;
+            results[idx] = await uploadToWalrus(entries[idx].data, userAddress, epochs);
+        }
+    }
+
+    const workers = Array.from({ length: Math.min(concurrency, entries.length) }, () => next());
+    await Promise.all(workers);
+    return results;
+}
+
 /**
  * Download a blob from Walrus.
- * Returns the raw bytes (still encrypted — decrypt with Seal after download).
+ * Returns the raw bytes (still encrypted — decrypt with AES-GCM after Seal DEK recovery).
  */
 export async function downloadFromWalrus(
     blobId: string
@@ -128,6 +159,29 @@ export async function downloadFromWalrus(
 
     const arrayBuffer = await response.arrayBuffer();
     return new Uint8Array(arrayBuffer);
+}
+
+/**
+ * Download multiple blobs in parallel with a concurrency limit.
+ * Returns Uint8Arrays in the same order as the input blob IDs.
+ */
+export async function downloadMultipleFromWalrus(
+    blobIds: string[],
+    concurrency: number = DEFAULT_CONCURRENCY,
+): Promise<Uint8Array[]> {
+    const results: Uint8Array[] = new Array(blobIds.length);
+    let cursor = 0;
+
+    async function next(): Promise<void> {
+        while (cursor < blobIds.length) {
+            const idx = cursor++;
+            results[idx] = await downloadFromWalrus(blobIds[idx]);
+        }
+    }
+
+    const workers = Array.from({ length: Math.min(concurrency, blobIds.length) }, () => next());
+    await Promise.all(workers);
+    return results;
 }
 
 /**

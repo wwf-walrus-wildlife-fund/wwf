@@ -1,6 +1,6 @@
 import { bcs } from "@mysten/sui/bcs";
 import { deriveObjectID } from "@mysten/sui/utils";
-import type { Dataset } from "./types";
+import type { Dataset, FileManifest } from "./types";
 
 type AnySuiClient = any;
 
@@ -48,11 +48,35 @@ export function parseBlobIds(blobIdsRaw: any): string[] {
     .filter((value: string | null): value is string => Boolean(value));
 }
 
+function parseFileManifest(raw: unknown): FileManifest | undefined {
+  if (typeof raw !== "string" || raw.length === 0) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && Array.isArray(parsed.files)) {
+      return parsed as FileManifest;
+    }
+  } catch {
+    // malformed manifest — treat as legacy
+  }
+  return undefined;
+}
+
+function extractEnvelopeKeyLength(envelope: any): number {
+  const key = envelope?.encrypted_key ?? envelope?.fields?.encrypted_key;
+  if (Array.isArray(key)) return key.length;
+  if (key instanceof Uint8Array) return key.byteLength;
+  if (typeof key === "string") return key.length > 0 ? 1 : 0;
+  return 0;
+}
+
 export function toUiDataset(objectId: string, fields: any): Dataset {
   const priceMist = Number(fields?.price_sui ?? 0);
   const priceSui = Number.isFinite(priceMist)
     ? (priceMist / 1_000_000_000).toString()
     : "0";
+
+  const manifest = parseFileManifest(fields?.file_manifest);
+  const envelopeKeyLen = extractEnvelopeKeyLength(fields?.envelope);
 
   return {
     id: objectId,
@@ -69,7 +93,18 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
     expiresIn: "N/A",
     verified: false,
     blob_ids: parseBlobIds(fields?.blob_ids),
+    fileManifest: manifest,
+    envelopeVersion: Number(fields?.envelope?.version ?? fields?.envelope?.fields?.version ?? 0),
+    envelopeKeyLength: envelopeKeyLen,
   };
+}
+
+/**
+ * Returns true when the dataset uses envelope encryption (DEK pattern).
+ * Legacy datasets have an empty encrypted_key.
+ */
+export function isEnvelopeEncrypted(dataset: Dataset): boolean {
+  return (dataset.envelopeKeyLength ?? 0) > 0;
 }
 
 /**
