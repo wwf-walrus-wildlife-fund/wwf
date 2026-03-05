@@ -47,11 +47,18 @@ interface UploadParams {
     useQuilt?: boolean;
 }
 
+export interface UploadResult {
+    datasetObjectId: string;
+    blobIds: string[];
+    txDigest: string;
+}
+
 interface UseUploadReturn {
     upload: (params: UploadParams) => Promise<string | null>;
     progress: UploadProgress;
     isUploading: boolean;
     isSuccess: boolean;
+    result: UploadResult | null;
     error: string | null;
     reset: () => void;
 }
@@ -93,6 +100,7 @@ export function useUpload(): UseUploadReturn {
     const [progress, setProgress] = useState<UploadProgress>(INITIAL_PROGRESS);
     const [isUploading, setIsUploading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [result, setResult] = useState<UploadResult | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const account = useCurrentAccount();
@@ -103,6 +111,7 @@ export function useUpload(): UseUploadReturn {
         setProgress(INITIAL_PROGRESS);
         setIsUploading(false);
         setIsSuccess(false);
+        setResult(null);
         setError(null);
     }, []);
 
@@ -273,11 +282,13 @@ export function useUpload(): UseUploadReturn {
                     });
                 }
 
-                await signAndExecuteTransaction({
+                const txResult = await signAndExecuteTransaction({
                     transaction: tx,
                 });
 
                 // ── Done ──
+                const txDigest = (txResult as any)?.digest ?? '';
+                setResult({ datasetObjectId, blobIds, txDigest });
                 setIsSuccess(true);
                 setProgress(makeProgress('done', 100, 'Dataset published!'));
                 return datasetObjectId;
@@ -293,5 +304,5 @@ export function useUpload(): UseUploadReturn {
         [account, signAndExecuteTransaction, suiClient],
     );
 
-    return { upload, progress, isUploading, isSuccess, error, reset };
+    return { upload, progress, isUploading, isSuccess, result, error, reset };
 }
