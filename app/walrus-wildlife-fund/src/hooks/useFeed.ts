@@ -73,6 +73,7 @@ export function useFeed() {
 
   const filteredDatasets = useMemo(() => {
     let result = allDatasets.filter((d) => {
+      if (d.archived) return false;
       const matchSearch =
         d.name.toLowerCase().includes(search.toLowerCase()) ||
         d.description.toLowerCase().includes(search.toLowerCase());
@@ -121,7 +122,7 @@ export function useTrendingDatasets(limit = 6): {
 
   useEffect(() => {
     fetchFeedOnce()
-      .then(({ datasets }) => setDatasets(datasets.slice(0, limit)))
+      .then(({ datasets }) => setDatasets(datasets.filter((d) => !d.archived).slice(0, limit)))
       .catch(() => {})
       .finally(() => setIsLoading(false));
   }, [limit]);

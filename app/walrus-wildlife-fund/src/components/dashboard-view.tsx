@@ -18,7 +18,7 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { FindUserForm } from "@/components/find-user-form";
 import { useDashboard } from "@/hooks/useDashboard";
-import { useDeleteBlob } from "@/hooks/useDeleteBlob";
+import { useArchiveAndDeleteDataset } from "@/hooks/useArchiveAndDeleteDataset";
 import Link from "next/link";
 
 const statIcons: Record<string, typeof Upload> = {
@@ -40,9 +40,9 @@ interface DashboardViewProps {
 }
 
 export function DashboardView({ address }: DashboardViewProps) {
-  const { publishedDatasets, purchasedDatasets, stats, isLoading, error } =
+  const { publishedDatasets, purchasedDatasets, stats, isLoading, error, refetch } =
     useDashboard(address);
-  const { deleteBlob, isDeleting } = useDeleteBlob();
+  const { archiveAndDelete, isPending } = useArchiveAndDeleteDataset();
   const [activeTab, setActiveTab] = useState<"published" | "purchased">(
     "published",
   );
@@ -55,10 +55,8 @@ export function DashboardView({ address }: DashboardViewProps) {
     if (!confirm("Delete the Walrus blob(s) for this dataset? This cannot be undone.")) return;
     setDeletingId(datasetId);
     try {
-      for (const objId of blobObjectIds) {
-        const ok = await deleteBlob(objId);
-        if (!ok) break;
-      }
+      const ok = await archiveAndDelete(datasetId, blobObjectIds);
+      if (ok) refetch();
     } finally {
       setDeletingId(null);
     }
@@ -334,11 +332,11 @@ export function DashboardView({ address }: DashboardViewProps) {
                               {activeTab === "published" && d.blobObjectIds && d.blobObjectIds.length > 0 && (
                                 <button
                                   onClick={() => handleDelete(d.id, d.blobObjectIds!)}
-                                  disabled={isDeleting && deletingId === d.id}
+                                  disabled={isPending && deletingId === d.id}
                                   className="p-2 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
                                   title="Delete Walrus blob"
                                 >
-                                  {isDeleting && deletingId === d.id ? (
+                                  {isPending && deletingId === d.id ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                   ) : (
                                     <Trash2 className="w-4 h-4" />

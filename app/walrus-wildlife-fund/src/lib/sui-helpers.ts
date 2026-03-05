@@ -107,6 +107,7 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
     fileManifest: manifest,
     envelopeVersion: Number(fields?.envelope?.version ?? fields?.envelope?.fields?.version ?? 0),
     envelopeKeyLength: envelopeKeyLen,
+    archived: Boolean(fields?.archived),
   };
 }
 

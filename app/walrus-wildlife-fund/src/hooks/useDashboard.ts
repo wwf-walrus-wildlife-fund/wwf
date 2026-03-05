@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Dataset } from "@/lib/types";
 import { toUiDataset } from "@/lib/sui-helpers";
 import { useCurrentAccount } from "@mysten/dapp-kit-react";
@@ -15,6 +15,7 @@ export function useDashboard(targetAddress?: string): {
   stats: DashboardStat[];
   isLoading: boolean;
   error: string | null;
+  refetch: () => void;
 } {
   const account = useCurrentAccount();
   const [publishedDatasets, setPublishedDatasets] = useState<Dataset[]>([]);
@@ -22,6 +23,9 @@ export function useDashboard(targetAddress?: string): {
   const [stats, setStats] = useState<DashboardStat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  const refetch = useCallback(() => setFetchKey((k) => k + 1), []);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -56,12 +60,12 @@ export function useDashboard(targetAddress?: string): {
 
         const ownRaw = Array.isArray(data?.own_datasets) ? data.own_datasets : [];
         const readRaw = Array.isArray(data?.read_datasets) ? data.read_datasets : [];
-        const ownDatasets = ownRaw.map((d: any) =>
-          toUiDataset(String(d?.id ?? ""), d),
-        );
-        const readDatasets = readRaw.map((d: any) =>
-          toUiDataset(String(d?.id ?? ""), d),
-        );
+        const ownDatasets = ownRaw
+          .map((d: any) => toUiDataset(String(d?.id ?? ""), d))
+          .filter((d: Dataset) => !d.archived);
+        const readDatasets = readRaw
+          .map((d: any) => toUiDataset(String(d?.id ?? ""), d))
+          .filter((d: Dataset) => !d.archived);
 
         setPublishedDatasets(ownDatasets);
         setPurchasedDatasets(readDatasets);
@@ -89,7 +93,7 @@ export function useDashboard(targetAddress?: string): {
     }
 
     fetchDashboard();
-  }, [account?.address, targetAddress]);
+  }, [account?.address, targetAddress, fetchKey]);
 
-  return { publishedDatasets, purchasedDatasets, stats, isLoading, error };
+  return { publishedDatasets, purchasedDatasets, stats, isLoading, error, refetch };
 }

@@ -55,6 +55,7 @@ export interface Dataset {
    * 0 (or absent) means legacy Seal-encrypted-blob dataset.
    */
   envelopeKeyLength?: number;
+  archived?: boolean;
 }
 
 /** Decrypted file returned to the UI. */
