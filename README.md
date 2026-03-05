@@ -33,10 +33,10 @@ TuskBazaar is a fully on-chain data marketplace where anyone can sell and buy da
                             │
               ┌─────────────┼─────────────┐
               │             │             │
-        ┌─────▼─────┐ ┌────▼────┐ ┌──────▼──────┐
+        ┌──────▼─────┐ ┌────▼────┐ ┌──────▼──────┐
         │  Sui Chain │ │  Walrus │ │  Seal Keys  │
-        │  (Move)    │ │ Storage │ │  (Threshold │
-        │            │ │         │ │  Encryption) │
+        │  (Move)    │ │ Storage │ │ (Threshold  │
+        │            │ │         │ │ Encryption) │
         └────────────┘ └─────────┘ └─────────────┘
 ```
 
@@ -95,7 +95,7 @@ TuskBazaar makes extensive use of Walrus for decentralized storage:
 
 ### Error Handling (CR-6)
 - All Walrus operations (upload, download, quilt) have structured error handling with user-facing messages.
-- Missing/expired blobs surface clear errors. Upload failures include status codes, payload sizes, and response bodies for debugging.
+- Upload failures include status codes, payload sizes, and response bodies for debugging.
 
 ### On-Chain Asset Management (CR-7)
 - Datasets are Sui Move objects with derived IDs, managed entirely through smart contracts.
@@ -105,7 +105,6 @@ TuskBazaar makes extensive use of Walrus for decentralized storage:
 ### Deletable Blob Lifecycle (CR-8)
 - Blobs uploaded with `send_object_to` so the uploader owns the Walrus blob object.
 - `useDeleteBlob` hook builds a PTB to delete blob objects on-chain (burning the Walrus storage object).
-- `useArchiveAndDeleteDataset` orchestrates the full teardown: archive dataset, remove readers, destroy dataset, delete blobs.
 
 ### Storage Cost Estimation (CR-9)
 - Upload page displays estimated storage cost before upload: `~{(days / 30) * 0.5} SUI`.
