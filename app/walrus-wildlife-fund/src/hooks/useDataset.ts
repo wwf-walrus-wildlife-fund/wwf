@@ -11,9 +11,14 @@ import type { SessionKey } from "@mysten/seal";
 import type { Dataset, DecryptedFile } from "@/lib/types";
 import { extractFields, toUiDataset, canRead, isEnvelopeEncrypted } from "@/lib/sui-helpers";
 import { createSessionKey, decryptDEK, decryptContent } from "@/lib/seal";
-import { downloadFromWalrus, downloadMultipleFromWalrus } from "@/lib/walrus";
+import {
+  downloadFromWalrus,
+  downloadMultipleFromWalrus,
+  downloadQuiltPatch,
+  listQuiltPatches,
+  type QuiltPatchListEntry,
+} from "@/lib/walrus";
 import { decryptFile } from "@/lib/crypto";
-import { sliceQuiltPatch } from "@/lib/quilt";
 import { fromBase64 } from "@mysten/sui/utils";
 
 function toArrayBuffer(u8: Uint8Array): ArrayBuffer {
@@ -240,21 +245,98 @@ export function useDataset(id: string): UseDatasetReturn {
         const manifest = dsSnapshot.fileManifest;
 
         if (manifest?.storageType === "quilt") {
-          // Quilt path: single blob, slice by manifest offsets
-          const quiltBlob = await downloadFromWalrus(blobIds[0]);
-          const files: DecryptedFile[] = await Promise.all(
-            manifest.files.map(async (entry) => {
-              const patch = sliceQuiltPatch(quiltBlob, entry.patchOffset!, entry.patchOffset! + entry.patchLength!);
-              const plaintext = await decryptFile(dek, patch);
-              return {
-                name: entry.name,
-                mimeType: entry.mimeType,
-                data: new Blob([toArrayBuffer(plaintext)], { type: entry.mimeType }),
-              };
-            }),
+          const quiltBlobId = blobIds[0];
+          console.log("[useDataset] quilt manifest:", JSON.stringify(manifest, null, 2));
+
+          // ── Step 1: Try aggregator listing (works for any real quilt) ──
+          let patchByIdentifier: Map<string, string> | null = null;
+          try {
+            const patchList = await listQuiltPatches(quiltBlobId);
+            console.log("[useDataset] aggregator patches:", patchList);
+            patchByIdentifier = new Map(
+              patchList.map((p) => [p.identifier, p.quiltPatchId]),
+            );
+          } catch (err) {
+            console.warn("[useDataset] Could not list quilt patches from aggregator", err);
+          }
+
+          // ── Step 2: Resolve a patch ID for each file ──
+          // Priority: aggregator (by quiltIdentifier) → manifest quiltPatchId
+          // Use || (not ??) so empty strings fall through.
+          const resolvedPatchIds: (string | null)[] = manifest.files.map((entry) => {
+            const fromAggregator = entry.quiltIdentifier
+              ? patchByIdentifier?.get(entry.quiltIdentifier)
+              : undefined;
+            const patchId = (fromAggregator || entry.quiltPatchId) || null;
+            console.log(`[useDataset] resolve "${entry.name}": aggregator="${fromAggregator}", manifest="${entry.quiltPatchId}" → "${patchId}"`);
+            return patchId;
+          });
+
+          const allResolved = resolvedPatchIds.every((id) => id != null && id.length > 0);
+
+          if (allResolved) {
+            // Download each patch individually by patch ID
+            const files: DecryptedFile[] = await Promise.all(
+              manifest.files.map(async (entry, i) => {
+                const encryptedPatch = await downloadQuiltPatch(resolvedPatchIds[i]!);
+                const plaintext = await decryptFile(dek, encryptedPatch);
+                return {
+                  name: entry.name,
+                  mimeType: entry.mimeType,
+                  data: new Blob([toArrayBuffer(plaintext)], { type: entry.mimeType }),
+                };
+              }),
+            );
+            setDecryptedFiles(files);
+            return files;
+          }
+
+          // ── Step 3: Legacy fallback — byte-offset slicing ──
+          const hasOffsets = manifest.files.every(
+            (e) => typeof e.patchOffset === "number" && typeof e.patchLength === "number" && e.patchLength > 0,
           );
-          setDecryptedFiles(files);
-          return files;
+          if (hasOffsets) {
+            console.warn("[useDataset] Falling back to legacy byte-offset quilt slicing");
+            const quiltBlob = await downloadFromWalrus(quiltBlobId);
+            const files: DecryptedFile[] = await Promise.all(
+              manifest.files.map(async (entry) => {
+                const patch = quiltBlob.slice(entry.patchOffset!, entry.patchOffset! + entry.patchLength!);
+                const plaintext = await decryptFile(dek, patch);
+                return {
+                  name: entry.name,
+                  mimeType: entry.mimeType,
+                  data: new Blob([toArrayBuffer(plaintext)], { type: entry.mimeType }),
+                };
+              }),
+            );
+            setDecryptedFiles(files);
+            return files;
+          }
+
+          // ── Step 4: Last resort — if aggregator returned patches but
+          // we couldn't match by identifier, try matching by index ──
+          if (patchByIdentifier && patchByIdentifier.size === manifest.files.length) {
+            console.warn("[useDataset] Falling back to index-based patch matching");
+            const patchIds = [...patchByIdentifier.values()];
+            const files: DecryptedFile[] = await Promise.all(
+              manifest.files.map(async (entry, i) => {
+                const encryptedPatch = await downloadQuiltPatch(patchIds[i]);
+                const plaintext = await decryptFile(dek, encryptedPatch);
+                return {
+                  name: entry.name,
+                  mimeType: entry.mimeType,
+                  data: new Blob([toArrayBuffer(plaintext)], { type: entry.mimeType }),
+                };
+              }),
+            );
+            setDecryptedFiles(files);
+            return files;
+          }
+
+          throw new Error(
+            `Cannot download quilt files — no patch IDs resolved and no byte offsets. ` +
+            `Manifest has ${manifest.files.length} files, aggregator returned ${patchByIdentifier?.size ?? 0} patches.`,
+          );
         } else {
           // Blobs path: one blob per file
           const encryptedBlobs = await downloadMultipleFromWalrus(blobIds);

@@ -8,9 +8,13 @@ export interface ManifestFileEntry {
   mimeType: string;
   /** Index into blob_ids for "blobs" storageType. */
   blobIndex: number;
-  /** Byte offset within quilt blob (only for "quilt" storageType). */
+  /** Safe identifier used as the quilt form field name (only for "quilt" storageType). */
+  quiltIdentifier?: string;
+  /** Walrus quilt patch ID (only for "quilt" storageType). */
+  quiltPatchId?: string;
+  /** @deprecated Legacy: byte offset within client-encoded quilt blob. */
   patchOffset?: number;
-  /** Byte length within quilt blob (only for "quilt" storageType). */
+  /** @deprecated Legacy: byte length within client-encoded quilt blob. */
   patchLength?: number;
 }
 
