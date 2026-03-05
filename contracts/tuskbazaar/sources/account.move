@@ -33,10 +33,22 @@ public fun owner(self: &Account): address {
     self.owner
 }
 
+public(package) fun is_owner(self: &Account, dataset_id: ID): bool {
+    self.own_datasets.contains(&dataset_id)
+}
+
 public(package) fun add_read_dataset(self: &mut Account, dataset_id: ID) {
     self.read_datasets.insert(dataset_id);
 }
 
 public(package) fun add_own_dataset(self: &mut Account, dataset_id: ID) {
     self.own_datasets.insert(dataset_id);
+}
+
+public(package) fun remove_read_dataset(self: &mut Account, dataset_id: &ID) {
+    self.read_datasets.remove(dataset_id);
+}
+
+public(package) fun remove_own_dataset(self: &mut Account, dataset_id: &ID) {
+    self.own_datasets.remove(dataset_id);
 }
