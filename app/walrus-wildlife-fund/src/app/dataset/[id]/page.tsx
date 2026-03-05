@@ -19,13 +19,19 @@ import {
   Dog,
   ExternalLink,
   Files,
+  Trash2,
+  CalendarPlus,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { zipSync } from "fflate";
+import { useCurrentAccount } from "@mysten/dapp-kit-react";
 import { GlowOrb } from "@/components/glow-orb";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { ExtendBlobModal } from "@/components/extend-blob-modal";
 import { useDataset } from "@/hooks/useDataset";
+import { useArchiveAndDeleteDataset } from "@/hooks/useArchiveAndDeleteDataset";
+import { useExtendBlob } from "@/hooks/useExtendBlob";
 
 export default function DatasetDetailPage({
   params,
@@ -48,7 +54,11 @@ export default function DatasetDetailPage({
     decryptedFiles,
     decryptError,
   } = useDataset(id);
+  const account = useCurrentAccount();
+  const { archiveAndDelete, isPending: isDeleting } = useArchiveAndDeleteDataset();
+  const { extendBlobs, isPending: isExtending, error: extendError } = useExtendBlob();
   const [copied, setCopied] = useState(false);
+  const [showExtendModal, setShowExtendModal] = useState(false);
 
   if (isLoading) {
     return (
@@ -136,6 +146,16 @@ export default function DatasetDetailPage({
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isOwner = !!account && !!dataset.seller && account.address === dataset.seller;
+  const blobObjectIds = dataset.blobObjectIds ?? [];
+
+  const handleDelete = async () => {
+    if (!blobObjectIds.length) return;
+    if (!confirm("Delete the Walrus blob(s) for this dataset? This cannot be undone.")) return;
+    const ok = await archiveAndDelete(dataset.id, blobObjectIds);
+    if (ok) router.push("/dashboard");
   };
 
   const blobId = dataset.blob_ids?.[0];
@@ -362,7 +382,7 @@ export default function DatasetDetailPage({
                           className="text-emerald-300"
                           style={{ fontSize: "0.85rem" }}
                         >
-                          You own this dataset
+                          {isOwner ? "You own this dataset" : "You bought this dataset"}
                         </p>
                       </div>
 
@@ -502,12 +522,57 @@ export default function DatasetDetailPage({
                     </div>
                   )}
                 </div>
+
+                {/* Owner management */}
+                {isOwner && blobObjectIds.length > 0 && (
+                  <div className="p-5 rounded-xl border border-white/[0.06] bg-white/[0.02]">
+                    <p
+                      className="text-white/30 mb-3"
+                      style={{ fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}
+                    >
+                      Manage Storage
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowExtendModal(true)}
+                        className="flex-1 py-2.5 rounded-lg border border-[#65C8D0]/20 bg-[#65C8D0]/5 text-[#65C8D0] hover:bg-[#65C8D0]/10 transition-all flex items-center justify-center gap-2"
+                        style={{ fontSize: "0.85rem" }}
+                      >
+                        <CalendarPlus className="w-4 h-4" />
+                        Extend
+                      </button>
+                      <button
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        className="flex-1 py-2.5 rounded-lg border border-rose-500/20 bg-rose-500/5 text-rose-400 hover:bg-rose-500/10 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        style={{ fontSize: "0.85rem" }}
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
         </div>
       </div>
       <Footer />
+
+      <ExtendBlobModal
+        open={showExtendModal}
+        onClose={() => setShowExtendModal(false)}
+        datasetName={dataset?.name ?? ""}
+        blobObjectIds={blobObjectIds}
+        onExtend={extendBlobs}
+        isPending={isExtending}
+        error={extendError}
+      />
     </div>
   );
 }
