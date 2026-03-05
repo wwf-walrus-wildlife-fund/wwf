@@ -130,6 +130,7 @@ public fun remove_reader(
     assert!(owner.is_owner(object::id(self)), ENotOwner);
     reader.remove_read_dataset(&object::id(self));
     let _: bool = self.id.df_remove(Reader(reader.owner()));
+    self.readers_count = self.readers_count - 1;
 }
 
 public fun destroy(self: Dataset, owner: &mut Account) {
