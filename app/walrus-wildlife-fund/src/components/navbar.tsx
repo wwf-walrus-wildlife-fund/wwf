@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import logo from "@/app/wwf-walrus-logo.png";
 import {
   Menu,
   X,
@@ -39,6 +41,13 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-18">
           <Link href="/" className="flex items-center gap-2 group">
+            <Image
+              src={logo}
+              alt="TuskBazaar logo"
+              width={32}
+              height={32}
+              className="rounded-md"
+            />
             <span
               className="text-white tracking-wide"
               style={{
