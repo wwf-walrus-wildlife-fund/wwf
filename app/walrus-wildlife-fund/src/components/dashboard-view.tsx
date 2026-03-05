@@ -11,6 +11,7 @@ import {
   Eye,
   Trash2,
   Loader2,
+  CalendarPlus,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { GlowOrb } from "@/components/glow-orb";
@@ -19,6 +20,8 @@ import { Footer } from "@/components/footer";
 import { FindUserForm } from "@/components/find-user-form";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useArchiveAndDeleteDataset } from "@/hooks/useArchiveAndDeleteDataset";
+import { useExtendBlob } from "@/hooks/useExtendBlob";
+import { ExtendBlobModal } from "@/components/extend-blob-modal";
 import Link from "next/link";
 
 const statIcons: Record<string, typeof Upload> = {
@@ -43,10 +46,16 @@ export function DashboardView({ address }: DashboardViewProps) {
   const { publishedDatasets, purchasedDatasets, stats, isLoading, error, refetch } =
     useDashboard(address);
   const { archiveAndDelete, isPending } = useArchiveAndDeleteDataset();
+  const { extendBlobs, isPending: isExtending, error: extendError } = useExtendBlob();
   const [activeTab, setActiveTab] = useState<"published" | "purchased">(
     "published",
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [extendTarget, setExtendTarget] = useState<{
+    datasetId: string;
+    datasetName: string;
+    blobObjectIds: string[];
+  } | null>(null);
 
   const activeDatasets =
     activeTab === "published" ? publishedDatasets : purchasedDatasets;
@@ -330,18 +339,27 @@ export function DashboardView({ address }: DashboardViewProps) {
                                 )}
                               </Link>
                               {activeTab === "published" && d.blobObjectIds && d.blobObjectIds.length > 0 && (
-                                <button
-                                  onClick={() => handleDelete(d.id, d.blobObjectIds!)}
-                                  disabled={isPending && deletingId === d.id}
-                                  className="p-2 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                                  title="Delete Walrus blob"
-                                >
-                                  {isPending && deletingId === d.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </button>
+                                <>
+                                  <button
+                                    onClick={() => setExtendTarget({ datasetId: d.id, datasetName: d.name, blobObjectIds: d.blobObjectIds! })}
+                                    className="p-2 rounded-lg text-white/15 hover:text-[#65C8D0] hover:bg-[#65C8D0]/10 transition-all opacity-0 group-hover:opacity-100"
+                                    title="Extend blob storage"
+                                  >
+                                    <CalendarPlus className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(d.id, d.blobObjectIds!)}
+                                    disabled={isPending && deletingId === d.id}
+                                    className="p-2 rounded-lg text-white/15 hover:text-rose-400 hover:bg-rose-500/10 transition-all opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                                    title="Delete Walrus blob"
+                                  >
+                                    {isPending && deletingId === d.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </>
                               )}
                             </div>
                           </td>
@@ -355,6 +373,20 @@ export function DashboardView({ address }: DashboardViewProps) {
         </div>
       </div>
       <Footer />
+
+      <ExtendBlobModal
+        open={!!extendTarget}
+        onClose={() => setExtendTarget(null)}
+        datasetName={extendTarget?.datasetName ?? ""}
+        blobObjectIds={extendTarget?.blobObjectIds ?? []}
+        onExtend={async (blobObjectIds, epochs) => {
+          const ok = await extendBlobs(blobObjectIds, epochs);
+          if (ok) refetch();
+          return ok;
+        }}
+        isPending={isExtending}
+        error={extendError}
+      />
     </div>
   );
 }
