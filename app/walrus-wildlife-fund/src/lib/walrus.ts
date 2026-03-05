@@ -32,6 +32,8 @@ export function normalizeWalrusEpochs(epochs: number): number {
 export interface WalrusUploadResponse {
     /** The blob ID assigned by Walrus */
     blobId: string;
+    /** Sui object ID of the blob (needed for deletion) */
+    blobObjectId: string;
     /** Whether this was a new upload or a reference to existing blob */
     isNew: boolean;
 }
@@ -98,11 +100,13 @@ export async function uploadToWalrus(
     if (result.newlyCreated) {
         return {
             blobId: result.newlyCreated.blobObject.blobId,
+            blobObjectId: result.newlyCreated.blobObject.id,
             isNew: true,
         };
     } else if (result.alreadyCertified) {
         return {
             blobId: result.alreadyCertified.blobId,
+            blobObjectId: result.alreadyCertified.blobObject?.id ?? "",
             isNew: false,
         };
     }
@@ -248,6 +252,8 @@ export interface QuiltPatchInfo {
 export interface WalrusQuiltUploadResponse {
     /** The quilt-level blob ID. */
     quiltBlobId: string;
+    /** Sui object ID of the quilt blob (needed for deletion). */
+    quiltBlobObjectId: string;
     /** Per-file patch info (identifier + quiltPatchId). */
     patches: QuiltPatchInfo[];
     isNew: boolean;
@@ -309,29 +315,36 @@ export async function uploadQuiltToWalrus(
     // Tolerate both camelCase and snake_case top-level keys
     const blobStoreResult = result.blobStoreResult ?? result.blob_store_result;
     let quiltBlobId: string;
+    let quiltBlobObjectId: string;
     let isNew: boolean;
 
     if (blobStoreResult?.newlyCreated) {
         quiltBlobId = blobStoreResult.newlyCreated.blobObject.blobId;
+        quiltBlobObjectId = blobStoreResult.newlyCreated.blobObject.id;
         isNew = true;
     } else if (blobStoreResult?.alreadyCertified) {
         quiltBlobId = blobStoreResult.alreadyCertified.blobId;
+        quiltBlobObjectId = blobStoreResult.alreadyCertified.blobObject?.id ?? "";
         isNew = false;
     } else if (blobStoreResult?.newly_created) {
         quiltBlobId = blobStoreResult.newly_created.blob_object?.blob_id
             ?? blobStoreResult.newly_created.blobObject?.blobId;
+        quiltBlobObjectId = blobStoreResult.newly_created.blob_object?.id
+            ?? blobStoreResult.newly_created.blobObject?.id ?? "";
         isNew = true;
     } else if (blobStoreResult?.already_certified) {
         quiltBlobId = blobStoreResult.already_certified.blob_id
             ?? blobStoreResult.already_certified.blobId;
+        quiltBlobObjectId = blobStoreResult.already_certified.blob_object?.id ?? "";
         isNew = false;
     } else {
-        // Check if it's a flat response (newlyCreated at top level, no blobStoreResult wrapper)
         if (result.newlyCreated) {
             quiltBlobId = result.newlyCreated.blobObject.blobId;
+            quiltBlobObjectId = result.newlyCreated.blobObject.id;
             isNew = true;
         } else if (result.alreadyCertified) {
             quiltBlobId = result.alreadyCertified.blobId;
+            quiltBlobObjectId = result.alreadyCertified.blobObject?.id ?? "";
             isNew = false;
         } else {
             throw new Error(
@@ -362,7 +375,7 @@ export async function uploadQuiltToWalrus(
         );
     }
 
-    return { quiltBlobId, patches, isNew };
+    return { quiltBlobId, quiltBlobObjectId, patches, isNew };
 }
 
 /**

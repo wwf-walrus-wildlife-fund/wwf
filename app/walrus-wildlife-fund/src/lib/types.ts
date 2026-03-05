@@ -22,6 +22,8 @@ export interface FileManifest {
   version: number;
   storageType: "blobs" | "quilt";
   files: ManifestFileEntry[];
+  /** Sui object IDs of the Walrus blob(s) — needed for deletion. */
+  blobObjectIds?: string[];
 }
 
 // ============================================================
@@ -43,6 +45,8 @@ export interface Dataset {
   imageUrl?: string;
   projectUrl?: string;
   blob_ids?: string[];
+  /** Sui object IDs of the Walrus blob(s) — for deletion. */
+  blobObjectIds?: string[];
   /** Parsed file manifest (present on envelope-encrypted datasets). */
   fileManifest?: FileManifest;
   envelopeVersion?: number;

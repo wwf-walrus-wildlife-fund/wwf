@@ -103,6 +103,7 @@ export function toUiDataset(objectId: string, fields: any): Dataset {
     expiresIn: "N/A",
     verified: false,
     blob_ids: parseBlobIds(fields?.blob_ids),
+    blobObjectIds: manifest?.blobObjectIds ?? [],
     fileManifest: manifest,
     envelopeVersion: Number(fields?.envelope?.version ?? fields?.envelope?.fields?.version ?? 0),
     envelopeKeyLength: envelopeKeyLen,

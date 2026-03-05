@@ -49,6 +49,7 @@ interface UploadParams {
 export interface UploadResult {
     datasetObjectId: string;
     blobIds: string[];
+    blobObjectIds: string[];
     txDigest: string;
 }
 
@@ -188,6 +189,7 @@ export function useUpload(): UseUploadReturn {
                 const useQuilt = shouldUseQuilt(params.files, params.useQuilt);
 
                 let blobIds: string[];
+                let blobObjectIds: string[];
                 let manifest: FileManifest;
 
                 if (useQuilt) {
@@ -204,6 +206,9 @@ export function useUpload(): UseUploadReturn {
                         epochs,
                     );
                     blobIds = [quiltResult.quiltBlobId];
+                    blobObjectIds = quiltResult.quiltBlobObjectId
+                        ? [quiltResult.quiltBlobObjectId]
+                        : [];
 
                     const patchMap = new Map(
                         quiltResult.patches.map((p) => [p.identifier, p.quiltPatchId]),
@@ -238,6 +243,7 @@ export function useUpload(): UseUploadReturn {
                         version: 1,
                         storageType: 'quilt',
                         files: manifestFiles,
+                        blobObjectIds,
                     };
                 } else {
                     // Upload each encrypted file as a separate blob
@@ -250,9 +256,13 @@ export function useUpload(): UseUploadReturn {
                         epochs,
                     );
                     blobIds = results.map((r) => r.blobId);
+                    blobObjectIds = results
+                        .map((r) => r.blobObjectId)
+                        .filter(Boolean);
                     manifest = {
                         version: 1,
                         storageType: 'blobs',
+                        blobObjectIds,
                         files: params.files.map((f, i) => ({
                             name: f.name,
                             size: f.size,
@@ -309,7 +319,7 @@ export function useUpload(): UseUploadReturn {
 
                 // ── Done ──
                 const txDigest = (txResult as any)?.digest ?? '';
-                setResult({ datasetObjectId, blobIds, txDigest });
+                setResult({ datasetObjectId, blobIds, blobObjectIds, txDigest });
                 setIsSuccess(true);
                 setProgress(makeProgress('done', 100, 'Dataset published!'));
                 return datasetObjectId;
